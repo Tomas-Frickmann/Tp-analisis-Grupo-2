@@ -19,7 +19,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-public class MonitorVentana extends JFrame {
+import interfaces.IVentana;
+
+public class MonitorVentana extends JFrame implements IVentana {
 
 	
 	
@@ -32,6 +34,7 @@ public class MonitorVentana extends JFrame {
     private JPanel pnlHistorial;
     private JLabel titHist;
     private JList<String> list;
+	
     
     public MonitorVentana() {
         setTitle("PANTALLA DE TURNOS");
@@ -125,6 +128,11 @@ public class MonitorVentana extends JFrame {
 	        this.repaint();
 	    });
 	}
+
+
+
+
+
 
 }
 

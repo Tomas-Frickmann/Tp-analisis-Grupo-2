@@ -14,32 +14,34 @@ public class MonitorModelo {
 	private LinkedList<String> historialAtendidos = new LinkedList<>();
     private IMonitorListener listener;
     private final int MAX_HISTORIAL = 5;
-	
+	private int puertoEscucha;
     
     public void setListener(IMonitorListener listener) {
         this.listener = listener;
-    }
-public void iniciarServidor() {
-    new Thread(() -> {
-        try (ServerSocket ss = new ServerSocket(6000)) {
-            while (true) {
-                Socket s = ss.accept();
-                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                String dni = in.readLine();
+    }public void iniciarServidor() {
+        new Thread(() -> {
+            try (ServerSocket ss = new ServerSocket(puertoEscucha)) {
                 
-              
-                   this.procesarEntrada(dni);
-                    
-                    
-                  
-                    
                 
+                while (true) {
+                    
+                    try (Socket s = ss.accept();
+                         BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
+                        
+                        String dni;
+                        
+                        while ((dni = in.readLine()) != null) {
+                            procesarEntrada(dni);
+                        }
+                    } catch (Exception e) {
+                        
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            if (listener != null) listener.alOcurrirError("Error de red","Error");
-        }
-    }).start();
-}
+        }).start();
+    }
 private void procesarEntrada(String dni) {
 	historialAtendidos.addFirst(dni);
 	if (historialAtendidos.size() > MAX_HISTORIAL) {
@@ -51,6 +53,11 @@ private void procesarEntrada(String dni) {
         listener.alRecibirNuevoLlamado(new LinkedList<>(historialAtendidos));
     }
     
+}
+public void setPuertoEscucha(int puertoEscucha) {
+	// TODO Auto-generated method stub
+	this.puertoEscucha = puertoEscucha;
+	
 }
 
 

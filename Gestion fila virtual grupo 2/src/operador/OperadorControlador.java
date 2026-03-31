@@ -2,11 +2,12 @@ package operador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
-import cliente.Cliente;
 import interfaces.IFilaListener;
 
 public class OperadorControlador implements ActionListener, IFilaListener{
@@ -19,12 +20,13 @@ public class OperadorControlador implements ActionListener, IFilaListener{
 	this.ventana=null;
 	this.modelo=new OperadorModelo();
 	this.modelo.setListener(this);
-	this.modelo.iniciarServidor();
+	
 	}
 	
 	public void setVentana(OperadorVentana ventana) {
 		this.ventana = ventana;
 		this.ventana.setActionListener(this);
+		configurarEventosVentana();
 		
 	}
 
@@ -78,4 +80,25 @@ public class OperadorControlador implements ActionListener, IFilaListener{
            
        
     }
+    
+
+    private void configurarEventosVentana() {
+        
+        this.ventana.addWindowListener(new WindowAdapter() {
+            
+            @Override
+            public void windowClosing(WindowEvent e) {                
+                modelo.desconectar(true);
+                System.exit(0); 
+            }
+        });
+    }
+
+	public void configurarRed(String ipMonitor, int puertoMonitor, int puertoLocal) {
+		// TODO Auto-generated method stub
+		this.modelo.setMonitorIP_purto(ipMonitor,puertoMonitor);
+		this.modelo.setPuertoServidor(puertoLocal);
+		this.modelo.iniciarServidor();
+	}
+
 }

@@ -16,7 +16,7 @@ public MonitorControlador()  {
 	this.ventana=null;
 	this.modelo= new MonitorModelo();
 	this.modelo.setListener(this);
-	this.modelo.iniciarServidor();
+
 	
 
 }
@@ -42,6 +42,12 @@ public MonitorControlador()  {
 		this.ventana.actualizarMonitor(dnis);
 		// TODO Auto-generated method stub
 		
+	}
+
+	public void configurarRed(int puertoEscucha) {
+		
+		this.modelo.setPuertoEscucha(puertoEscucha);
+		this.modelo.iniciarServidor();
 	}
 
 

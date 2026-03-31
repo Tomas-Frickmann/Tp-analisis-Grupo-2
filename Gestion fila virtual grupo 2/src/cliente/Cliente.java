@@ -1,10 +1,7 @@
 package cliente;
-
-import java.io.Serializable;
 import java.time.LocalTime;
 
-public class Cliente implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class Cliente  {
     private String dni;
     private LocalTime horaLlegada;
 

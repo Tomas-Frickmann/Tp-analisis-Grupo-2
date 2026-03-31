@@ -14,7 +14,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-public class OperadorVentana extends JFrame {
+import interfaces.IVentana;
+
+public class OperadorVentana extends JFrame implements IVentana{
     private static final long serialVersionUID = 1L;
     private JLabel lblContador = new JLabel("Clientes en espera: 0", SwingConstants.CENTER);
     private JLabel lblEstado = new JLabel("---", SwingConstants.CENTER);

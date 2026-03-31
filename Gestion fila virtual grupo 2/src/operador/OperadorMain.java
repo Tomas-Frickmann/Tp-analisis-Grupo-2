@@ -1,16 +1,27 @@
 package operador;
- 
 
- public class OperadorMain {
+import util.ConfigView;
+import util.TipoConfig;
 
-	private static OperadorControlador controlador;
-	
-	public static void main(String[] args) {
-		controlador = new OperadorControlador();
-		OperadorVentana ventana = new OperadorVentana();
-		controlador.setVentana(ventana);
-		
+public class OperadorMain {
+    public static void main(String[] args) {
+        ConfigView config = new ConfigView(TipoConfig.EMISOR_RECEPTOR);
+        config.setVisible(true);
 
-	}
+        if (config.fueConfirmado()) {
+         
+            String ipMonitor = config.getIpRemota();
+            int puertoMonitor = config.getPuertoRemoto();
+            int puertoLocal = config.getPuertoLocal();
 
+            OperadorControlador controlador = new OperadorControlador();
+            OperadorVentana ventana = new OperadorVentana();
+            
+            controlador.configurarRed(ipMonitor, puertoMonitor, puertoLocal);
+            controlador.setVentana(ventana);
+            ventana.setVisible(true);
+        } else {
+            System.exit(0);
+        }
+    }
 }
