@@ -8,14 +8,15 @@ public class Puesto {
 	private String dni;
 	private int reintentos;
 	private int nroPuesto;
-	private static int nroPuestoSig = 1;
 	
 	
-	public Puesto(String ip, String puerto) {
+	
+	public Puesto(String ip, String puerto,String nroPuesto) {
 		this.ip=ip;
 		this.puerto=puerto;
-		this.nroPuesto=nroPuestoSig;
-		nroPuestoSig++;
+		this.nroPuesto= Integer.parseInt(nroPuesto);
+	
+	
 	}
 	public String getIp() {
 		return ip;

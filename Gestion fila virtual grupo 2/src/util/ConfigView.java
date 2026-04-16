@@ -14,12 +14,11 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 
 public class ConfigView extends JDialog {
-    private JTextField txtIpRemota, txtPuertoRemoto, txtPuertoLocal;
+    private JTextField txtIpRemota, txtPuertoRemoto, txtPuertoLocal,txtPuesto;
     private boolean confirmado = false;
     private TipoConfig tipo;
 
@@ -120,7 +119,12 @@ public class ConfigView extends JDialog {
             txtPuertoLocal = crearFieldEstilizado("6000");
             panel.add(txtPuertoLocal);
         }
-        else {
+        else if(tipo==TipoConfig.OPERADOR){
+			 panel.add(crearLabelEstilizado(" Puesto: "));
+			 txtPuesto= crearFieldEstilizado("");
+			 panel.add(txtPuesto);
+        	
+        }        else {
         	 panel.add(crearLabelEstilizado(" IP Destino (Remota):"));
              txtIpRemota = crearFieldEstilizado("127.0.0.1");
              panel.add(txtIpRemota);
@@ -203,6 +207,9 @@ public class ConfigView extends JDialog {
     public String getIpRemota() { 
     	return txtIpRemota != null ? txtIpRemota.getText().trim() : null; }
     
+    
+    public String getPuesto() { 
+    	return txtPuesto != null ? txtPuesto.getText().trim() : null; }
   
     public int getPuertoRemoto() { 
         if(txtPuertoRemoto == null) 

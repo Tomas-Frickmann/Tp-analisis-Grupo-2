@@ -1,146 +1,104 @@
 package operador;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
+import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import cliente.Cliente;
-import interfaces.IFilaListener;
+import java.net.UnknownHostException;
 
 public class OperadorModelo {
     
-    private String monitorIP = "localhost";
-    private int puertoMonitor = 6000;
-    private int puertoServidor = 5000;
+    // Datos del Servidor Central
+    private String ipServidor = "localhost";
+    private int puertoServidor = 5000; // Debe coincidir con el puerto de ServidorMain
 
-    
-    private ServerSocket ss;         
-    private Socket sMonitor;         
-    private PrintWriter outMonitor;  
-    
-    private Queue<Cliente> fila = new ConcurrentLinkedQueue<>();
-    private IFilaListener observador;
+    // Datos de este Puesto (Operador)
+    private String miIp = "127.0.0.1";
+    private String idPuesto; // Ej: "1", "2"
+    private int MiPuertoLocal; // Puerto local para recibir notificaciones (si se implementa)
 
     public OperadorModelo() {}
 
-    public void conectarMonitor() {
+    // Configuramos la IP real y el ID del puesto al iniciar
+    public void configurarPuesto(String nroPuesto) {
+        this.idPuesto = nroPuesto;
         try {
-            
-            if (sMonitor == null || sMonitor.isClosed() || outMonitor == null) {
-                this.sMonitor = new Socket();
-                
-                this.sMonitor.connect(new java.net.InetSocketAddress(monitorIP, puertoMonitor), 500);
-                this.outMonitor = new PrintWriter(sMonitor.getOutputStream(), true);
-
-            }
-        } catch (IOException e) {
-            
-            desconectar(false);
+            this.miIp = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            this.miIp = "127.0.0.1";
         }
     }
 
+    // 1. Handshake inicial con el Servidor
+    public boolean registrarEnServidor() {
+    	this.MiPuertoLocal= 6000 + Integer.parseInt(this.idPuesto); // esto deberia ser distinto pero como es todo en una maquina lo dejo asi
+        try (Socket s = new Socket(ipServidor, puertoServidor); 
+             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
+            
+            // Enviamos: REGISTRO;192.168.1.5;1
+            out.println("REGISTRO;" + this.miIp + ";" + this.idPuesto+";"+this.MiPuertoLocal);
+            
+            String respuesta = in.readLine();
+            
+            if (respuesta != null && respuesta.equals("OK:REGISTRADO")) {
+                System.out.println("Puesto " + this.idPuesto + " registrado exitosamente.");
+                return true;
+            } else {
+                System.out.println("El servidor rechazó el registro: " + respuesta);
+                return false;
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error al intentar conectarse al Servidor Central.");
+            return false;
+        }
+    }
+
+    // 2. Pedir el siguiente cliente a la Fila (que ahora está en el servidor)
     public String llamarSiguiente() {
-        if (fila.isEmpty()) 
-            return "VACIO";
-
-
-        conectarMonitor(); 
-
-        if (outMonitor != null) {
-            Cliente c = fila.peek();
-            outMonitor.println(c.getDni());
-            if (outMonitor.checkError()) {
-                desconectar(false);
-                return "No_MONITOR";
-            }
-            fila.poll();
-            if (observador != null) 
-                observador.alCambiarFila(fila.size());               
-            return "EXITO";
-        }
-        return "No_MONITOR";
-    }
-
-    
-    public void desconectar(boolean server) {
-        try {
-            if (outMonitor != null) {
-                outMonitor.close();
-            }
-            if (sMonitor != null) {
-                sMonitor.close();
-            }
-            if (server && ss != null) {
-				ss.close();
-			}
+        try (Socket s = new Socket(ipServidor, puertoServidor);
+             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
             
-        } catch (IOException e) {
+            // Enviamos: LLAMAR;1
+            out.println("LLAMAR;" + this.idPuesto);
             
-        } finally {
+            // Retorna el DNI o "ERROR:FILA_VACIA"
+            return in.readLine(); 
             
-            this.sMonitor = null;
-            this.outMonitor = null;	
-            
+        } catch (Exception e) {
+            return "ERROR:CONEXION";
         }
     }
 
-   
-   
-
-    public void iniciarServidor() {
-        new Thread(() -> {
-            try {
-                this.ss = new ServerSocket(puertoServidor); 
-               
-
-                while (!ss.isClosed()) {
-                    Socket sCliente = ss.accept(); 
-                    
-                    new Thread(() -> {
-                        
-                        try (BufferedReader inCliente = new BufferedReader(new InputStreamReader(sCliente.getInputStream()))) {
-                            String dni;
-                            while ((dni = inCliente.readLine()) != null) {
-                                fila.add(new Cliente(dni));
-                                if (observador != null) 
-                                	observador.alCambiarFila(fila.size());
-                            }
-                        } catch (IOException e) {
-                            
-                        }
-                    }).start();
-                }
-            } catch (IOException e) {
-                
-            }
-        }).start();
+    // 3. Nuevo requerimiento: Re-notificar al cliente (Máximo 3 veces)
+    public String reLlamar() {
+        try (Socket s = new Socket(ipServidor, puertoServidor);
+             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
+            
+            // Enviamos: RE_LLAMAR;1
+            out.println("RE_LLAMAR;" + this.idPuesto);
+            
+            // Retorna "OK:RE_LLAMADO" o "ERROR:MAX_INTENTOS"
+            return in.readLine(); 
+            
+        } catch (Exception e) {
+            return "ERROR:CONEXION";
+        }
     }
-
-   
-
-
-    public int tamañoFila() { 
-    	return fila.size(); 
+    public String obtenerTamañoFila() {
+        try (Socket s = new Socket(ipServidor, puertoServidor);
+             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
+            
+            out.println("INFO_FILA");
+            return in.readLine(); // Devuelve "0", "1", "5", etc.
+            
+        } catch (Exception e) {
+            return "-"; // Si hay error de red, devolvemos un guión
+        }
     }
-    public void setListener(IFilaListener listener) { 
-    	this.observador = listener; 
-    }
-
-	public void setMonitorIP_purto(String ipMonitor, int puertoMonitor2) {
-		// TODO Auto-generated method stub
-		this.monitorIP = ipMonitor;
-		this.puertoMonitor = puertoMonitor2;
-		
-	}
-
-	public void setPuertoServidor(int puertoLocal) {
-		// TODO Auto-generated method stub
-		this.puertoServidor = puertoLocal;
-		
-	}
 }

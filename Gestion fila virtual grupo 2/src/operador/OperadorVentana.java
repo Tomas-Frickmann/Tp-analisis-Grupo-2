@@ -74,7 +74,7 @@ public class OperadorVentana extends JFrame implements IVentana{
 
     
     setLocationRelativeTo(null);
-    setVisible(true);
+    setVisible(false);
 }
    public void setActionListener(ActionListener controlador) {
 		this.actionListener=controlador;
@@ -85,15 +85,15 @@ public class OperadorVentana extends JFrame implements IVentana{
 	   
 	   JOptionPane.showMessageDialog(this,mensaje,titulo,tipo);
    }
-   public void actualizarUI(int tamaño) {
+   public void actualizarUI(String tamaño) {
        SwingUtilities.invokeLater(() -> {
            lblContador.setText("Clientes en espera: " + tamaño);
            lblEstado.setText("SISTEMA ACTIVO");
            lblEstado.setForeground(new Color(67, 160, 71));
        });
    }
-public void cambiaEstado() {
-	 this.lblEstado.setText("ERROR: MONITOR NO ENCONTRADO");
+public void cambiaEstado(String text) {
+	 this.lblEstado.setText(text);
      this.lblEstado.setForeground(Color.RED);
 	
 }
