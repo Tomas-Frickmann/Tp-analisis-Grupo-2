@@ -19,7 +19,14 @@ import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
+
 import interfaces.IVentana;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
 
 public class MonitorVentana extends JFrame implements IVentana {
 
@@ -32,6 +39,9 @@ public class MonitorVentana extends JFrame implements IVentana {
     private JPanel pnlHistorial;
     private JLabel titHist;
     private JList<String> list;
+    
+    private javax.swing.Timer blinkTimer;
+    private int contadorParpadeo = 0;
     
     public MonitorVentana() {
         setTitle("PANTALLA DE TURNOS");
@@ -104,6 +114,10 @@ public class MonitorVentana extends JFrame implements IVentana {
             String actual = historial.getFirst();
             String textoGigante = "<html><div style='text-align: center;'>" + actual.replace(" - ", "<br>") + "</div></html>";
             lblActual.setText(textoGigante);  
+            
+            iniciarParpadeo();
+            reproducirSonido();
+            
             modeloHistorial.clear();
             Iterator<String> it = historial.iterator();
             
@@ -118,5 +132,48 @@ public class MonitorVentana extends JFrame implements IVentana {
             
             this.repaint();
         });
+    }
+    private void iniciarParpadeo() {
+        // Si ya estaba parpadeando por un llamado anterior, lo reseteamos
+        if (blinkTimer != null && blinkTimer.isRunning()) {
+            blinkTimer.stop();
+        }
+
+        contadorParpadeo = 0;
+        Color colorOriginal = Color.WHITE;
+        Color colorFondo = new Color(38, 50, 56); // El color oscuroFondo que definiste en el constructor
+
+        // Creamos el timer: cada 500ms cambia de color
+        blinkTimer = new javax.swing.Timer(250, e -> {
+            if (contadorParpadeo < 10) { // Parpadeará 5 veces (encendido/apagado)
+                if (lblActual.getForeground().equals(colorOriginal)) {
+                    lblActual.setForeground(colorFondo);
+                } else {
+                    lblActual.setForeground(colorOriginal);
+                }
+                contadorParpadeo++;
+            } else {
+                // Al final lo dejamos siempre visible y frenamos el timer
+                lblActual.setForeground(colorOriginal);
+                blinkTimer.stop();
+            }
+        });
+        
+        blinkTimer.start();
+    }
+    private void reproducirSonido() {
+        try {
+            // Cargamos el archivo desde el classpath (carpeta src o resources)
+            InputStream is = getClass().getResourceAsStream("campana.wav");
+            // Necesitamos un BufferedInputStream para que sea compatible con mark/reset
+            InputStream bufferedIn = new BufferedInputStream(is);
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(bufferedIn);
+            
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start(); // Reproduce el sonido
+        } catch (Exception e) {
+            System.err.println("Error al reproducir sonido: " + e.getMessage());
+        }
     }
 }
