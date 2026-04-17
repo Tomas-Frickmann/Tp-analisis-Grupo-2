@@ -22,6 +22,10 @@ import javax.swing.SwingConstants;
 import interfaces.IVentana;
 
 public class ClienteView extends JFrame implements IVentana  {   
+/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 private JTextField txtDni;
 private ActionListener actionlistener;
 private String operadorIP = "localhost"; 
@@ -30,7 +34,7 @@ private JLabel lblTitulo;
 private JButton btnRegistrar;
 private String[] keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "CLR", "0", "<-"};
 
-private ArrayList<JButton> keypadButtons = new ArrayList<>();;
+private ArrayList<JButton> keypadButtons = new ArrayList<>();
 
 public ClienteView() {
 	

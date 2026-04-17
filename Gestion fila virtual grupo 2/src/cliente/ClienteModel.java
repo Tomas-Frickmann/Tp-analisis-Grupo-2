@@ -1,62 +1,36 @@
 package cliente;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import util.Protocolo;
 
 public class ClienteModel {
-    private String IP;
-    private Socket socket=null;
-    private PrintWriter out;
-    private int PORT;
+    private String ipServidor;
+    private int puertoServidor;
 
     public ClienteModel(String ipDestino, int puertoDestino) {
-        super();
-        this.IP = ipDestino;
-        this.PORT = puertoDestino;
+        this.ipServidor = "localhost"; 
+        this.puertoServidor = puertoDestino;
     }
 
-    public boolean enviarTurnoPorSocket(String dni) {
-        try {
-            
-            if (socket == null || socket.isClosed() || !socket.isConnected()) {
-                this.socket = new Socket(this.IP, this.PORT);
-                this.out = new PrintWriter(socket.getOutputStream(), true);
-            }
+    public String enviarTurnoPorSocket(String dni) {
+        
+        String mensaje = Protocolo.CMD_NUEVO_CLIENTE + Protocolo.SEPARADOR + dni;
 
+        try (Socket s = new Socket(ipServidor, puertoServidor);
+             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
             
-            out.println(dni);
-
-            
-            if (out.checkError()) {
-               
-                desconectar(); 
-                return false;
-            }
-
-            return true; 
+            out.println(mensaje);
+            System.out.println("Cliente: Enviado mensaje al servidor: " + mensaje);
+            return in.readLine(); 
             
         } catch (Exception e) {
-            e.printStackTrace();
-            desconectar();
-            return false;
-        }
-    }
-   
-  
-
-    public void desconectar() {
-        try {
-            if (out != null) 
-            	out.close();
-            if (socket != null) 
-            	socket.close();
-        } catch (Exception e) {
-            
-        } finally {
-           
-            this.socket = null;
-            this.out = null;
+            return Protocolo.ERR_CONEXION;
         }
     }
 
-
+    
 }

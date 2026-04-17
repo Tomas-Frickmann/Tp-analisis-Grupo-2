@@ -7,7 +7,7 @@ public class ClienteMain {
 
     public static void main(String[] args) {
         
-    	ConfigView config = new ConfigView(TipoConfig.SOLO_EMISOR);
+    	ConfigView config = new ConfigView(TipoConfig.KIOSCO);
         config.setVisible(true);
       
         if (config.fueConfirmado()) {

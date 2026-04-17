@@ -1,7 +1,5 @@
 package servidor;
 
-import cliente.Cliente;
-
 public class Puesto {
 	private String ip;
 	private String puerto;

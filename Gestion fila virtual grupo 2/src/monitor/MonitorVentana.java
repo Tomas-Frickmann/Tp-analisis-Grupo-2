@@ -23,8 +23,6 @@ import interfaces.IVentana;
 
 public class MonitorVentana extends JFrame implements IVentana {
 
-	
-	
     private static final long serialVersionUID = 1L;
     private JLabel lblActual;
     private DefaultListModel<String> modeloHistorial = new DefaultListModel<>();
@@ -34,13 +32,13 @@ public class MonitorVentana extends JFrame implements IVentana {
     private JPanel pnlHistorial;
     private JLabel titHist;
     private JList<String> list;
-	
     
     public MonitorVentana() {
         setTitle("PANTALLA DE TURNOS");
-        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setExtendedState(JFrame.MAXIMIZED_BOTH); 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         
+
         Color verdeFuerte = new Color(46, 125, 50);
         Color oscuroFondo = new Color(38, 50, 56);
         Color verdeClaro = new Color(200, 230, 201);
@@ -48,7 +46,7 @@ public class MonitorVentana extends JFrame implements IVentana {
         mainPanel = new JPanel(new BorderLayout());
         setContentPane(mainPanel);
 
-       
+
         pnlActual = new JPanel(new GridBagLayout());
         pnlActual.setBackground(oscuroFondo);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -60,12 +58,13 @@ public class MonitorVentana extends JFrame implements IVentana {
         pnlActual.add(tit, gbc);
 
         lblActual = new JLabel("---", SwingConstants.CENTER);
-        lblActual.setFont(new Font("Arial", Font.BOLD, 250));
+
+        lblActual.setFont(new Font("Arial", Font.BOLD, 120)); 
         lblActual.setForeground(Color.WHITE);
         gbc.gridy = 1;
         pnlActual.add(lblActual, gbc);
 
-       
+
         pnlHistorial = new JPanel(new BorderLayout());
         pnlHistorial.setPreferredSize(new Dimension(450, 0));
         pnlHistorial.setBackground(new Color(232, 245, 233));
@@ -87,52 +86,37 @@ public class MonitorVentana extends JFrame implements IVentana {
         pnlHistorial.add(titHist, BorderLayout.NORTH);
         pnlHistorial.add(list, BorderLayout.CENTER);
 
+
         mainPanel.add(pnlActual, BorderLayout.CENTER);
         mainPanel.add(pnlHistorial, BorderLayout.EAST);
-
         
-        setVisible(true);
+        setVisible(false); 
     }
 
-    
-    
-
-    public void mostrarMensaje(String mensaje,String titulo,int tipo) {
- 	   
- 	   JOptionPane.showMessageDialog(this,mensaje,titulo,tipo);
+    public void mostrarMensaje(String mensaje, String titulo, int tipo) {
+        JOptionPane.showMessageDialog(this, mensaje, titulo, tipo);
     }
 
+    public void actualizarMonitor(LinkedList<String> historial) {
+        if (historial == null || historial.isEmpty()) return;
+        
+        SwingUtilities.invokeLater(() -> {
+            String actual = historial.getFirst();
+            String textoGigante = "<html><div style='text-align: center;'>" + actual.replace(" - ", "<br>") + "</div></html>";
+            lblActual.setText(textoGigante);  
+            modeloHistorial.clear();
+            Iterator<String> it = historial.iterator();
+            
+            if (it.hasNext()) {
+                it.next(); 
+            }
 
-	
-	
-	public void actualizarMonitor(LinkedList<String> historial) {
-		if (historial == null || historial.isEmpty()) return;
-	    SwingUtilities.invokeLater(() -> {
-	       String actual=historial.getFirst();
-	        lblActual.setText(actual);	   
-	        modeloHistorial.clear();
-	        Iterator<String> it = historial.iterator();
-	        
-	    
-	        if (it.hasNext()) {
-	            it.next(); 
-	        }
-
-	        
-	        while (it.hasNext()) {
-	            String s = it.next();
-	            this.modeloHistorial.addElement("  DNI: " + s);
-	        }
-
-	        
-	        this.repaint();
-	    });
-	}
-
-
-
-
-
-
+            while (it.hasNext()) {
+                String s = it.next();
+                this.modeloHistorial.addElement("  " + s);
+            }
+            
+            this.repaint();
+        });
+    }
 }
-

@@ -106,7 +106,7 @@ public class ConfigView extends JDialog {
 
     private void configurarCampos(JPanel panel) {
         
-        if (tipo == TipoConfig.SOLO_EMISOR) {
+        if (tipo == TipoConfig.KIOSCO || tipo == TipoConfig.MONITOR) {
             panel.add(crearLabelEstilizado(" IP Destino (Remota):"));
             txtIpRemota = crearFieldEstilizado("127.0.0.1");
             panel.add(txtIpRemota);
@@ -114,29 +114,13 @@ public class ConfigView extends JDialog {
             panel.add(crearLabelEstilizado(" Puerto Destino:"));
             txtPuertoRemoto = crearFieldEstilizado("5000");
             panel.add(txtPuertoRemoto);
-        } else if (tipo == TipoConfig.SOLO_RECEPTOR) {
-            panel.add(crearLabelEstilizado(" Puerto Local (Escucha):"));
-            txtPuertoLocal = crearFieldEstilizado("6000");
-            panel.add(txtPuertoLocal);
-        }
+        } 
         else if(tipo==TipoConfig.OPERADOR){
 			 panel.add(crearLabelEstilizado(" Puesto: "));
 			 txtPuesto= crearFieldEstilizado("");
 			 panel.add(txtPuesto);
         	
-        }        else {
-        	 panel.add(crearLabelEstilizado(" IP Destino (Remota):"));
-             txtIpRemota = crearFieldEstilizado("127.0.0.1");
-             panel.add(txtIpRemota);
-
-             panel.add(crearLabelEstilizado(" Puerto Destino:"));
-             txtPuertoRemoto = crearFieldEstilizado("6000");
-             panel.add(txtPuertoRemoto);
-             
-             panel.add(crearLabelEstilizado(" Puerto Local (Escucha):"));
-             txtPuertoLocal = crearFieldEstilizado("5000");
-             panel.add(txtPuertoLocal);
-        }
+        } 
         
     }
 

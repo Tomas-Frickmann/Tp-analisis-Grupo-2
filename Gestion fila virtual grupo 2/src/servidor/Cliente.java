@@ -1,4 +1,4 @@
-package cliente;
+package servidor;
 
 public class Cliente  {
     private String dni;
