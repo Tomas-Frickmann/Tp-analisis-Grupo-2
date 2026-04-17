@@ -39,7 +39,7 @@ public class MonitorVentana extends JFrame implements IVentana {
     private JPanel pnlHistorial;
     private JLabel titHist;
     private JList<String> list;
-    
+    private Color oscuroFondo;
     private javax.swing.Timer blinkTimer;
     private int contadorParpadeo = 0;
     
@@ -50,7 +50,7 @@ public class MonitorVentana extends JFrame implements IVentana {
         
 
         Color verdeFuerte = new Color(46, 125, 50);
-        Color oscuroFondo = new Color(38, 50, 56);
+        this.oscuroFondo = new Color(38, 50, 56);
         Color verdeClaro = new Color(200, 230, 201);
 
         mainPanel = new JPanel(new BorderLayout());
@@ -134,26 +134,26 @@ public class MonitorVentana extends JFrame implements IVentana {
         });
     }
     private void iniciarParpadeo() {
-        // Si ya estaba parpadeando por un llamado anterior, lo reseteamos
+        
         if (blinkTimer != null && blinkTimer.isRunning()) {
             blinkTimer.stop();
         }
 
         contadorParpadeo = 0;
         Color colorOriginal = Color.WHITE;
-        Color colorFondo = new Color(38, 50, 56); // El color oscuroFondo que definiste en el constructor
+       
 
-        // Creamos el timer: cada 500ms cambia de color
+        
         blinkTimer = new javax.swing.Timer(250, e -> {
-            if (contadorParpadeo < 10) { // Parpadeará 5 veces (encendido/apagado)
+            if (contadorParpadeo < 10) { 
                 if (lblActual.getForeground().equals(colorOriginal)) {
-                    lblActual.setForeground(colorFondo);
+                    lblActual.setForeground(this.oscuroFondo);
                 } else {
                     lblActual.setForeground(colorOriginal);
                 }
                 contadorParpadeo++;
             } else {
-                // Al final lo dejamos siempre visible y frenamos el timer
+                
                 lblActual.setForeground(colorOriginal);
                 blinkTimer.stop();
             }
@@ -163,15 +163,15 @@ public class MonitorVentana extends JFrame implements IVentana {
     }
     private void reproducirSonido() {
         try {
-            // Cargamos el archivo desde el classpath (carpeta src o resources)
+            
             InputStream is = getClass().getResourceAsStream("campana.wav");
-            // Necesitamos un BufferedInputStream para que sea compatible con mark/reset
+            
             InputStream bufferedIn = new BufferedInputStream(is);
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(bufferedIn);
             
             Clip clip = AudioSystem.getClip();
             clip.open(audioStream);
-            clip.start(); // Reproduce el sonido
+            clip.start(); 
         } catch (Exception e) {
             System.err.println("Error al reproducir sonido: " + e.getMessage());
         }
