@@ -164,7 +164,13 @@ public class MonitorVentana extends JFrame implements IVentana {
     private void reproducirSonido() {
         try {
             
-            InputStream is = getClass().getResourceAsStream("campana.wav");
+            InputStream is = getClass().getResourceAsStream("/util/campana.wav");
+            
+       
+            if (is == null) {
+                System.err.println("Error: No se pudo encontrar el archivo de audio 'campana.wav'. Verifica la ruta.");
+                return; 
+            }
             
             InputStream bufferedIn = new BufferedInputStream(is);
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(bufferedIn);
@@ -172,8 +178,10 @@ public class MonitorVentana extends JFrame implements IVentana {
             Clip clip = AudioSystem.getClip();
             clip.open(audioStream);
             clip.start(); 
+            
         } catch (Exception e) {
             System.err.println("Error al reproducir sonido: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
