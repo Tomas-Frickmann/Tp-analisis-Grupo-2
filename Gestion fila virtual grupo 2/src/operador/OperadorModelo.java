@@ -16,7 +16,10 @@ public class OperadorModelo {
     private int puertoServidor = 5000; 
     private String miIp = "127.0.0.1";
     private String idPuesto; 
-    private int miPuertoLocal; 
+    private int miPuertoLocal;
+    private String clienteActual = null;
+    private boolean reintentosAgotados = false;
+    
     public OperadorModelo() {}
 
   
@@ -63,19 +66,34 @@ public class OperadorModelo {
              PrintWriter out = new PrintWriter(s.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
             out.println(Protocolo.CMD_LLAMAR + Protocolo.SEPARADOR + this.idPuesto);
-            return in.readLine(); 
+            String res = in.readLine();
+
+            if (res != null && !res.startsWith("ERROR") && !res.equals(Protocolo.ERR_FILA_VACIA)) {
+                this.clienteActual = res;
+                this.reintentosAgotados = false;
+            }
+            return res;
         } catch (Exception e) {
-            return Protocolo.ERR_CONEXION; 
+            return Protocolo.ERR_CONEXION;
         }
     }
+    public String getClienteActual() {
+        return clienteActual;
+    }
+    public boolean isReintentosAgotados() {
+    	return reintentosAgotados;
+    }
 
-   
     public String reLlamar() {
         try (Socket s = new Socket(ipServidor, puertoServidor);
              PrintWriter out = new PrintWriter(s.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
-            out.println(Protocolo.CMD_RELLAMAR + Protocolo.SEPARADOR + this.idPuesto);            
-            return in.readLine(); 
+            out.println(Protocolo.CMD_RELLAMAR + Protocolo.SEPARADOR + this.idPuesto);
+            String respuesta= in.readLine();
+            if (Protocolo.SIN_REINTENTOS.equals(respuesta)) {
+                this.reintentosAgotados = true; 
+            }
+            return respuesta; 
         } catch (Exception e) {
             return Protocolo.ERR_CONEXION; 
         }

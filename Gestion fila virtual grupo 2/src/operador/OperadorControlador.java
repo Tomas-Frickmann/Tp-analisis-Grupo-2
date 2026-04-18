@@ -4,6 +4,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import util.Protocolo; // <-- IMPORTAMOS LAS CONSTANTES
@@ -17,6 +18,10 @@ public class OperadorControlador implements ActionListener {
 	public OperadorControlador() {
 		this.ventana = null;
 		this.modelo = new OperadorModelo();
+		this.timerCooldownRellamar = new Timer(30000, e -> {
+	        this.ventana.setBotonRellamarActivo(true);
+	    });
+	    this.timerCooldownRellamar.setRepeats(false);
 	}
 	
 	public void setVentana(OperadorVentana ventana) {
@@ -45,30 +50,46 @@ public class OperadorControlador implements ActionListener {
         }
     }
 	private void reLlamar() {
-		 String respuesta = this.modelo.reLlamar();
-	
-		if (Protocolo.SIN_REINTENTOS.equals(respuesta)) {
-            this.ventana.mostrarMensaje("El cliente se quedo sin reintentos. /n Por favor llame al siguiente", "REINTENTOS AGOTADOS", JOptionPane.INFORMATION_MESSAGE);
-        } 
-        else if (respuesta != null && respuesta.startsWith("ERROR")) {
-            this.ventana.cambiaEstado("Error de conexión");
-        } 
-    }
-	private void llamarSiguiente() {
-        String respuesta = this.modelo.llamarSiguiente();
+	    String respuesta = this.modelo.reLlamar();
+	    
+	    if (Protocolo.SIN_REINTENTOS.equals(respuesta)) {
+	        this.ventana.mostrarMensaje("Reintentos agotados.", "AVISO", JOptionPane.WARNING_MESSAGE);
+	        this.ventana.setBotonRellamarActivo(false); 
+	    } else {
+	        this.iniciarCooldownRellamar();
+	    }
+	}
+	    private void llamarSiguiente() {
+	        boolean hayAlguien = (this.modelo.getClienteActual() != null);
+	        boolean tieneReintentos = !this.modelo.isReintentosAgotados();
+	        boolean timerCorriendo = (this.timerCooldownRellamar != null && this.timerCooldownRellamar.isRunning());
 
-        if (Protocolo.ERR_FILA_VACIA.equals(respuesta)) {
-            this.ventana.mostrarMensaje("No hay clientes en espera.", "FILA VACÍA", JOptionPane.INFORMATION_MESSAGE);
-        } 
-        else if (respuesta != null && respuesta.startsWith("ERROR")) {
-            this.ventana.cambiaEstado("Error de conexión");
-        } 
-        else {
-            this.ventana.actualizarDniAtendiendo(respuesta); 
-            this.iniciarCooldownRellamar(); 
-        }
-     }
+	        this.ventana.setBotonRellamarActivo(false); 
 
+	        new Thread(() -> {
+	            String respuesta = this.modelo.llamarSiguiente();
+
+	            SwingUtilities.invokeLater(() -> {
+	                if (Protocolo.ERR_FILA_VACIA.equals(respuesta)) {
+	                    this.ventana.mostrarMensaje("No hay clientes en espera.", "FILA VACÍA", JOptionPane.INFORMATION_MESSAGE);
+
+	                    if (hayAlguien && tieneReintentos && !timerCorriendo) {
+	                        this.ventana.setBotonRellamarActivo(true);
+	                    } else {
+	                        this.ventana.setBotonRellamarActivo(false);
+	                    }
+	                } 
+	                else if (respuesta != null && respuesta.startsWith("ERROR")) {
+	                    this.ventana.cambiaEstado("Error de conexión");
+	                    this.ventana.setBotonRellamarActivo(hayAlguien && tieneReintentos && !timerCorriendo);
+	                } 
+	                else {
+	                    this.ventana.actualizarDniAtendiendo(respuesta); 
+	                    this.iniciarCooldownRellamar(); 
+	                }
+	            });
+	        }).start();
+	    }
 	public boolean registrarEnServidor() {
 		boolean respuesta = this.modelo.registrarEnServidor();
 		if (respuesta) {
@@ -84,15 +105,10 @@ public class OperadorControlador implements ActionListener {
 		this.modelo.configurarPuesto(idPuesto);
 	}
 	private void iniciarCooldownRellamar() {
-       
-        this.ventana.setBotonRellamarActivo(false);
-        if (timerCooldownRellamar != null && timerCooldownRellamar.isRunning()) {
-            timerCooldownRellamar.stop();
-        }
-        timerCooldownRellamar = new Timer(30000, e -> {
-           this.ventana.setBotonRellamarActivo(true);
-        });
-        timerCooldownRellamar.setRepeats(false);
-        timerCooldownRellamar.start();
-    }
+	    this.ventana.setBotonRellamarActivo(false);
+
+	    if (this.timerCooldownRellamar != null) {
+	        this.timerCooldownRellamar.restart();
+	    }
+	}
 }

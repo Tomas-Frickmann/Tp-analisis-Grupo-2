@@ -122,13 +122,12 @@ public class OperadorVentana extends JFrame implements IVentana {
         });
     }
     public void setBotonRellamarActivo(boolean activo) {
+
         SwingUtilities.invokeLater(() -> {
             btnRellamar.setEnabled(activo);
             if(activo) {
-           
                 btnRellamar.setBackground(new Color(230, 115, 0)); 
             } else {
-              
                 btnRellamar.setBackground(Color.GRAY); 
             }
         });

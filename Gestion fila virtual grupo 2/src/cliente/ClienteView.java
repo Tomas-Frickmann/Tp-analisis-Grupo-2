@@ -159,18 +159,15 @@ public void setActionListener(ActionListener actionListener) {
 
 
 public void setTextDni(String string) {
-	// TODO Auto-generated method stub
 	this.txtDni.setText(string);
 }
 
 public String getTextDni() {
-	// TODO Auto-generated method stub
 	return this.txtDni.getText();
 }
 
 @Override
 public void mostrarMensaje(String mensaje, String titulo, int tipo) {
-	// TODO Auto-generated method stub
 	JOptionPane.showMessageDialog(this,mensaje,titulo,tipo);
 }
 
