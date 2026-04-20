@@ -19,7 +19,7 @@ public class OperadorMain {
             boolean registrado = controlador.registrarEnServidor();
             
             if (registrado) {
-                ventana.setTitle("PUESTO "+idPuesto+" DE ATENCIÓN"); 
+                ventana.setTitle("PUESTO DE ATENCIÓN "+ idPuesto); 
                 ventana.setVisible(true);
             } else {
                 System.exit(0);

@@ -55,6 +55,7 @@ public class OperadorControlador implements ActionListener {
 	    if (Protocolo.SIN_REINTENTOS.equals(respuesta)) {
 	        this.ventana.mostrarMensaje("Reintentos agotados.", "AVISO", JOptionPane.WARNING_MESSAGE);
 	        this.ventana.setBotonRellamarActivo(false); 
+	        this.ventana.actualizarDniAtendiendo("Nadie");
 	    } else {
 	        this.iniciarCooldownRellamar();
 	    }
