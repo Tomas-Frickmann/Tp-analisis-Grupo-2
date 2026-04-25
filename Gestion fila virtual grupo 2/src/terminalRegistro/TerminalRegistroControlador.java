@@ -1,15 +1,15 @@
-package cliente;
+package terminalRegistro;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JOptionPane;
 import util.Protocolo;
 
-public class ClienteController implements ActionListener {
-    private ClienteView view;
-    private ClienteModel model;
+public class TerminalRegistroControlador implements ActionListener {
+    private TerminalRegistroVista view;
+    private TerminalRegistroModelo model;
 
-    public void setVentana(ClienteView ventana) {
+    public void setVentana(TerminalRegistroVista ventana) {
         this.view = ventana;
         this.view.setActionListener(this);
     }
@@ -70,6 +70,6 @@ public class ClienteController implements ActionListener {
     }
 
     public void configurarRed(String ipDestino, int puertoDestino) {
-        this.model = new ClienteModel(ipDestino, puertoDestino);
+        this.model = new TerminalRegistroModelo(ipDestino, puertoDestino);
     }
 }

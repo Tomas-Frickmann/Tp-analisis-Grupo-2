@@ -1,4 +1,4 @@
-package cliente;
+package terminalRegistro;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -6,11 +6,11 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import util.Protocolo;
 
-public class ClienteModel {
+public class TerminalRegistroModelo {
     private String ipServidor;
     private int puertoServidor;
 
-    public ClienteModel(String ipDestino, int puertoDestino) {
+    public TerminalRegistroModelo(String ipDestino, int puertoDestino) {
         this.ipServidor = "localhost"; 
         this.puertoServidor = puertoDestino;
     }

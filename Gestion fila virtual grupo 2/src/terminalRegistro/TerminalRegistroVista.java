@@ -1,4 +1,4 @@
-package cliente;
+package terminalRegistro;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -21,7 +21,7 @@ import javax.swing.SwingConstants;
 
 import interfaces.IVentana;
 
-public class ClienteView extends JFrame implements IVentana  {   
+public class TerminalRegistroVista extends JFrame implements IVentana  {   
 /**
 	 * 
 	 */
@@ -36,7 +36,7 @@ private String[] keys = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "CLR", "0"
 
 private ArrayList<JButton> keypadButtons = new ArrayList<>();
 
-public ClienteView() {
+public TerminalRegistroVista() {
 	
     setTitle("Terminal kiosco");
     setSize(480, 700); 

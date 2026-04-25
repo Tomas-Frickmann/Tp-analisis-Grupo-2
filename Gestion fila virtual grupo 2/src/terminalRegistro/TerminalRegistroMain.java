@@ -1,9 +1,9 @@
-package cliente;
+package terminalRegistro;
 
 import util.ConfigView;
 import util.TipoConfig;
 
-public class ClienteMain {
+public class TerminalRegistroMain {
 
     public static void main(String[] args) {
         
@@ -11,8 +11,8 @@ public class ClienteMain {
         config.setVisible(true);
       
         if (config.fueConfirmado()) {
-            ClienteView ventana = new ClienteView();
-            ClienteController controlador = new ClienteController();
+            TerminalRegistroVista ventana = new TerminalRegistroVista();
+            TerminalRegistroControlador controlador = new TerminalRegistroControlador();
             controlador.configurarRed(config.getIpRemota(), config.getPuertoRemoto());
             controlador.setVentana(ventana);
             ventana.setVisible(true);
