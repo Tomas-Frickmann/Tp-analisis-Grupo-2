@@ -44,7 +44,7 @@ public class MonitorVentana extends JFrame implements IVentana {
     private int contadorParpadeo = 0;
     
     public MonitorVentana() {
-        setTitle("PANTALLA DE TURNOS");
+        setTitle(" TURNOS");
         setExtendedState(JFrame.MAXIMIZED_BOTH); 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         

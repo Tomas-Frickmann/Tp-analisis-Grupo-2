@@ -38,7 +38,7 @@ private ArrayList<JButton> keypadButtons = new ArrayList<>();
 
 public ClienteView() {
 	
-    setTitle("SISTEMA DE FILA VIRTUAL - REGISTRO DE TURNO");
+    setTitle("Terminal kiosco");
     setSize(480, 700); 
     setDefaultCloseOperation(EXIT_ON_CLOSE);
     setResizable(false); 

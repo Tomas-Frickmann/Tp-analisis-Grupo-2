@@ -37,10 +37,16 @@ public class ClienteController implements ActionListener {
     }
 
     private void ejecutarRegistroTurno(String dni) {
-        if (!dniValido(dni)) {
-            this.view.mostrarMensaje("El DNI ingresado es inválido.", "DNI INVÁLIDO", JOptionPane.WARNING_MESSAGE);
+        if (dni.isEmpty() ){
+        	
+            this.view.mostrarMensaje("El DNI no puede estar vacio.", "DNI INVÁLIDO", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (dni.length() < 6) {
+        	
+        	this.view.mostrarMensaje("El DNI debe tener por lo menos 6 digitos.", "DNI INVÁLIDO", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
 
         
         String respuesta = this.model.enviarTurnoPorSocket(dni.trim());

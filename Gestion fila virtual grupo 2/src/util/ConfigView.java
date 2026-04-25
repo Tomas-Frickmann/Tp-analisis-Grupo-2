@@ -12,6 +12,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane; 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -75,9 +76,19 @@ public class ConfigView extends JDialog {
         panelPrincipal.add(panelForm, BorderLayout.CENTER);
 
         JButton btnConectar = crearBotonEstilizado("Confirmar y Conectar");
+        
+      
         btnConectar.addActionListener(e -> {
-            confirmado = true;
-            dispose();
+            if (validarCampos()) {
+                confirmado = true;
+                dispose();
+            } else {
+               
+                JOptionPane.showMessageDialog(this, 
+                    "Por favor, complete todos los campos antes de continuar.", 
+                    "Campos Incompletos", 
+                    JOptionPane.WARNING_MESSAGE);
+            }
         });
 
         JPanel panelBoton = new JPanel(new BorderLayout());
@@ -94,6 +105,23 @@ public class ConfigView extends JDialog {
         if(getWidth() < 480) setSize(480, getHeight());
         
         setLocationRelativeTo(null);
+    }
+
+    
+    private boolean validarCampos() {
+        if (tipo == TipoConfig.KIOSCO || tipo == TipoConfig.MONITOR) {
+         
+            if (txtIpRemota.getText().trim().isEmpty() || txtPuertoRemoto.getText().trim().isEmpty()) {
+                return false;
+            }
+        } else if (tipo == TipoConfig.OPERADOR) {
+          
+            if (txtPuesto.getText().trim().isEmpty()) {
+            	
+                return false;
+            }
+        }
+        return true;
     }
 
     private void configurarCampos(JPanel panel) {
@@ -115,11 +143,8 @@ public class ConfigView extends JDialog {
         } 
     }
 
-    
     private void aplicarFiltroRango(JTextField textField, int maxPermitido) {
         ((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
-            
-            
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
                 if (text == null) return;
                 String textoActual = fb.getDocument().getText(0, fb.getDocument().getLength());
@@ -127,7 +152,6 @@ public class ConfigView extends JDialog {
                 validarYPermitir(fb, offset, length, text, attrs, textoFuturo);
             }
 
-            
             public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
                 if (string == null) return;
                 String textoActual = fb.getDocument().getText(0, fb.getDocument().getLength());
@@ -136,17 +160,13 @@ public class ConfigView extends JDialog {
             }
 
             private void validarYPermitir(FilterBypass fb, int offset, int length, String textoIngresado, AttributeSet attrs, String textoFuturo) throws BadLocationException {
-                
                 if (textoFuturo.isEmpty()) {
                     fb.replace(offset, length, textoIngresado, attrs);
                     return;
                 }
-                
-                
                 if (textoFuturo.matches("\\d+")) {
                     try {
                         long valor = Long.parseLong(textoFuturo);
-                        
                         if (valor <= maxPermitido) {
                             fb.replace(offset, length, textoIngresado, attrs);
                         }
@@ -215,7 +235,7 @@ public class ConfigView extends JDialog {
         }
     }
 
-    // Getters
+
     public boolean fueConfirmado() { 
         return confirmado; 
     }
