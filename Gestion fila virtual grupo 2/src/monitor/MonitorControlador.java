@@ -12,13 +12,13 @@ public class MonitorControlador implements IMonitorListener {
 	private MonitorVentana ventana;
 	
 	
-	private LinkedList<String> historialTurnos;
+	//private LinkedList<String> historialTurnos;
 	
 	public MonitorControlador() {
 		this.ventana = null;
 		this.modelo = new MonitorModelo();
 		this.modelo.setListener(this); 
-		this.historialTurnos = new LinkedList<>();
+		//this.historialTurnos = new LinkedList<>();
 	}
 	
 	public void setVentana(MonitorVentana ventana) {
@@ -41,7 +41,7 @@ public class MonitorControlador implements IMonitorListener {
 	}
 
 	
-	public void procesarNuevoTurnoRecibido(String dni, String puesto) {
+	/*public void procesarNuevoTurnoRecibido(String dni, String puesto) {
 		
 		String textoFila = dni + "  -  " + puesto;
 		this.historialTurnos.addFirst(textoFila);
@@ -50,7 +50,7 @@ public class MonitorControlador implements IMonitorListener {
 		}
 		this.alRecibirNuevoLlamado(this.historialTurnos);
 	}
-
+*/
 		public void configurarRed(String ipServidorCentral, int puertoServidorCentral) {
 			this.modelo.setConexion(ipServidorCentral, puertoServidorCentral);
 			this.modelo.iniciarEscuchaPermanente(); 
