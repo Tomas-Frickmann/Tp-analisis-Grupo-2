@@ -23,5 +23,8 @@ public class Protocolo {
     public static final String SIN_REINTENTOS = "ERROR:CLIENTE_SIN_REINTENTOS";
 
     public static final String SEPARADOR = ";";
+	public static final String CMD_DESCONECTAR = "PUESTO_DESCONECTADO";
+
+	public static final String OK_DESCONECTAR = "OK:PUESTO_DESCONECTADO";
 	
 }

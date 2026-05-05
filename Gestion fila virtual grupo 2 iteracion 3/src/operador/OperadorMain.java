@@ -1,11 +1,10 @@
 package operador;
 
 import util.ConfigView;
-import util.TipoConfig;
 
 public class OperadorMain {
     public static void main(String[] args) {
-        ConfigView config = new ConfigView(TipoConfig.OPERADOR);
+        ConfigView config = new ConfigView();
         config.setVisible(true);
 
         if (config.fueConfirmado()) {
@@ -16,6 +15,7 @@ public class OperadorMain {
             OperadorVentana ventana = new OperadorVentana();
             controlador.setVentana(ventana);
             controlador.configurarPuesto(idPuesto);
+            
             boolean registrado = controlador.registrarEnServidor();
             
             if (registrado) {

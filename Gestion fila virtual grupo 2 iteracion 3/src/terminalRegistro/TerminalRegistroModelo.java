@@ -36,7 +36,7 @@ public class TerminalRegistroModelo {
                 catch (Exception e2) {
                     
                     intentosRestantes--;
-                    System.out.println("⏳ Respaldo tampoco responde. Intentos restantes: " + intentosRestantes);
+                    System.out.println("Respaldo tampoco responde. Intentos restantes: " + intentosRestantes);
                     
                     
                     if (intentosRestantes > 0) {

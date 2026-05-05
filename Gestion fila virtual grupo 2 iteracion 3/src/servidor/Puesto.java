@@ -6,13 +6,15 @@ public class Puesto {
 	private String dni;
 	private int reintentos;
 	private int nroPuesto;
+	private boolean activo;
 	
 	
 	
-	public Puesto(String ip, String puerto,String nroPuesto) {
+	public Puesto(String ip, String puerto,String nroPuesto, boolean activo) {
 		this.ip=ip;
 		this.puerto=puerto;
 		this.nroPuesto= Integer.parseInt(nroPuesto);
+		this.activo=activo;
 	
 	
 	}
@@ -50,4 +52,12 @@ public class Puesto {
 		setDni(c.getDni());
 		setReintentos(3);
 	}
+	public boolean isActivo() {
+		return activo;
+	}
+	public void setActivo(boolean activo) {
+		this.activo = activo;
+	}
+	
+	
 }

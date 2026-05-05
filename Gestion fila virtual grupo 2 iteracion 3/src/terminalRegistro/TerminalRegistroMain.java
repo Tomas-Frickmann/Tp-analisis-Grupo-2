@@ -1,3 +1,4 @@
+
 package terminalRegistro;
 
 public class TerminalRegistroMain {

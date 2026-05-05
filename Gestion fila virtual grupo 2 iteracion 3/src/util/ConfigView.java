@@ -12,7 +12,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane; 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -23,10 +23,11 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 
 public class ConfigView extends JDialog {
-    private JTextField txtIpRemota, txtPuertoRemoto, txtPuertoLocal, txtPuesto;
-    private boolean confirmado = false;
-    private TipoConfig tipo;
 
+    private static final long serialVersionUID = 1L;
+    private JTextField txtPuesto;
+    private boolean confirmado = false;
+   
     private final Color VERDE_PRIMARIO = new Color(46, 139, 87);   
     private final Color VERDE_OSCURO = new Color(34, 100, 60);   
     private final Color VERDE_FONDO = new Color(245, 255, 250);   
@@ -37,10 +38,8 @@ public class ConfigView extends JDialog {
     private final Font FONT_LABEL = new Font("Segoe UI", Font.PLAIN, 13);
     private final Font FONT_CAMPO = new Font("Consolas", Font.PLAIN, 13); 
 
-    public ConfigView(TipoConfig tipo) {
-        this.tipo = tipo;
-
-        setTitle("Inicializar Red - " + formatearTitulo(tipo));
+    public ConfigView() {
+        setTitle("Inicializar Red - " + formatearTitulo("OPERADOR"));
         setModal(true);
         setAlwaysOnTop(true);
         setResizable(false);
@@ -77,13 +76,11 @@ public class ConfigView extends JDialog {
 
         JButton btnConectar = crearBotonEstilizado("Confirmar y Conectar");
         
-      
         btnConectar.addActionListener(e -> {
             if (validarCampos()) {
                 confirmado = true;
                 dispose();
             } else {
-               
                 JOptionPane.showMessageDialog(this, 
                     "Por favor, complete todos los campos antes de continuar.", 
                     "Campos Incompletos", 
@@ -107,40 +104,17 @@ public class ConfigView extends JDialog {
         setLocationRelativeTo(null);
     }
 
-    
+    // ====== EL ARREGLO ESTÁ ACÁ ======
     private boolean validarCampos() {
-        if (tipo == TipoConfig.KIOSCO || tipo == TipoConfig.MONITOR) {
-         
-            if (txtIpRemota.getText().trim().isEmpty() || txtPuertoRemoto.getText().trim().isEmpty()) {
-                return false;
-            }
-        } else if (tipo == TipoConfig.OPERADOR) {
-          
-            if (txtPuesto.getText().trim().isEmpty()) {
-            	
-                return false;
-            }
-        }
-        return true;
+        // Agregamos el "!" (NO). Esto significa: "Devolver TRUE si el texto NO está vacío"
+        return !txtPuesto.getText().trim().isEmpty();
     }
 
     private void configurarCampos(JPanel panel) {
-        if (tipo == TipoConfig.KIOSCO || tipo == TipoConfig.MONITOR) {
-            panel.add(crearLabelEstilizado(" IP Destino (Remota):"));
-            txtIpRemota = crearFieldEstilizado("127.0.0.1");
-            panel.add(txtIpRemota); 
-
-            panel.add(crearLabelEstilizado(" Puerto Destino:"));
-            txtPuertoRemoto = crearFieldEstilizado("5000");
-            aplicarFiltroRango(txtPuertoRemoto, 65535); 
-            panel.add(txtPuertoRemoto);
-        } 
-        else if (tipo == TipoConfig.OPERADOR) {
-             panel.add(crearLabelEstilizado(" Puesto: "));
-             txtPuesto = crearFieldEstilizado("");
-             aplicarFiltroRango(txtPuesto, 30); 
-             panel.add(txtPuesto);
-        } 
+         panel.add(crearLabelEstilizado(" Puesto: "));
+         txtPuesto = crearFieldEstilizado("");
+         aplicarFiltroRango(txtPuesto, 30); 
+         panel.add(txtPuesto);
     }
 
     private void aplicarFiltroRango(JTextField textField, int maxPermitido) {
@@ -221,7 +195,7 @@ public class ConfigView extends JDialog {
         return boton;
     }
 
-    private String formatearTitulo(TipoConfig t) {
+    private String formatearTitulo(String t) {
         String s = t.toString().replace("_", " ").toLowerCase();
         return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
@@ -235,38 +209,11 @@ public class ConfigView extends JDialog {
         }
     }
 
-
     public boolean fueConfirmado() { 
         return confirmado; 
     }
     
-    public String getIpRemota() { 
-        return txtIpRemota != null ? txtIpRemota.getText().trim() : null; 
-    }
-    
     public String getPuesto() { 
         return txtPuesto != null ? txtPuesto.getText().trim() : null; 
-    }
-  
-    public int getPuertoRemoto() { 
-        if(txtPuertoRemoto == null || txtPuertoRemoto.getText().trim().isEmpty()) 
-            return 0;
-        try {
-            return Integer.parseInt(txtPuertoRemoto.getText().trim()); 
-        }
-        catch(NumberFormatException e) { 
-            return 0; 
-        }
-    }
-    
-    public int getPuertoLocal() { 
-        if(txtPuertoLocal == null || txtPuertoLocal.getText().trim().isEmpty()) 
-            return 0;
-        try {
-            return Integer.parseInt(txtPuertoLocal.getText().trim()); 
-        }
-        catch(NumberFormatException e) { 
-            return 0; 
-        }
     }
 }
