@@ -13,7 +13,7 @@ import util.Protocolo;
 public class ServidorLogic {
     
     private ConfigServidor config;
-    private boolean esRespaldo;
+    private volatile boolean esRespaldo;
     private String nombreServidor;
     
     private int puertoServidor; 
@@ -186,30 +186,57 @@ public class ServidorLogic {
     private void iniciarPing_Echo() {
         new Thread(() -> {
             int fallos = 0;
-            while (esRespaldo) { 
+            while (this.esRespaldo) {
                 try {
-                    Thread.sleep(config.getintervaloPing()); 
-                    
+                    Thread.sleep(config.getintervaloPing());
+
                     try (Socket s = new Socket(config.getIpPrincipal(), config.getPuertoPrincipal())) {
                         fallos = 0; 
                     } catch (Exception e) {
                         fallos++;
-                        System.out.println(nombreServidor + ": Ping/Echo falló (" + fallos + "/" + config.getMaxIntentosFallidos() + ")");
-                        
                         if (fallos >= config.getMaxIntentosFallidos()) {
-                            System.out.println(">>> ¡ALERTA! Servidor Principal caído. Asumiendo el control... <<<");
-                            this.esRespaldo = false;
-                            this.nombreServidor = "Servidor PRINCIPAL (Recuperado)";
                             
+                            // ANTES DE ELEGIR: Verificamos si alguien ya asumió mientras dormíamos
+                            String[] yaHayLider = util.GestorJson.obtenerPrincipalActivo();
+                            if (yaHayLider != null) {
+                                config.setIpPrincipal(yaHayLider[0]);
+                                config.setPuertoPrincipal(Integer.parseInt(yaHayLider[1]));
+                                fallos = 0;
+                                continue; // Volvemos al inicio del while para vigilar al nuevo jefe
+                            }
+
+                            String[] heredero = util.GestorJson.obtenerHeredero();
+                            if (heredero != null) {
+                                int puertoHeredero = Integer.parseInt(heredero[1]);
+
+                                if (this.puertoServidor == puertoHeredero) {
+                                    // --- SOY EL ELEGIDO ---
+                                    this.esRespaldo = false; // Frena mi propio bucle
+                                    ServidorMain.setEsRespaldo(false); // Frena el Heartbeat del Main
+                                    util.GestorJson.marcarInactivo(config.getIpPrincipal(), config.getPuertoPrincipal());
+                                    // Registro inmediato y FORZADO como principal
+                                    util.GestorJson.registrarOActualizar(this.ip, this.puertoServidor, true, true);
+                                    System.out.println(">>> [SISTEMA] ASCENSO EXITOSO. Soy el nuevo Principal.");
+                                    break; 
+                                } else {
+                                    // --- NO SOY EL ELEGIDO ---
+                                    // Espera larga (10s) para que el nuevo líder se asiente y abra su socket
+                                    Thread.sleep(10000); 
+
+                                    String[] nuevoJefe = util.GestorJson.obtenerPrincipalActivo();
+                                    if (nuevoJefe != null) {
+                                        config.setIpPrincipal(nuevoJefe[0]);
+                                        config.setPuertoPrincipal(Integer.parseInt(nuevoJefe[1]));
+                                        fallos = 0;
+                                    }
+                                }
+                            }
                         }
                     }
-                } catch (InterruptedException ie) {
-                    ie.printStackTrace();
-                }
+                } catch (Exception ie) { }
             }
         }).start();
     }
-
     private void abrirPuertoParaClientes() {
         new Thread(() -> {
             try (ServerSocket ss = new ServerSocket(puertoServidor)) {

@@ -51,4 +51,10 @@ public class ConfigServidor {
     	return intervaloPing; }
     public int getMaxIntentosFallidos() { 
     	return maxIntentosFallidos; }
+    public void setPuertoRespaldo(int puertoRespaldo) {
+        this.puertoRespaldo = puertoRespaldo;}
+    public void setIpPrincipal(String ip) {
+    	this.ipPrincipal=ip;}
+    public void setPuertoPrincipal(int puerto) {
+    	this.puertoPrincipal= puerto;}
 }
