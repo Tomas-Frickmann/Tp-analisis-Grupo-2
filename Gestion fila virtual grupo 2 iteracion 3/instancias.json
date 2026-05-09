@@ -1,4 +1,4 @@
-{"ip":"localhost", "puerto":5000, "esPrincipal":true, "activo":true, "timestamp":1778363270594}
-{"ip":"localhost", "puerto":5010, "esPrincipal":false, "activo":true, "timestamp":1778363272994}
-{"ip":"localhost", "puerto":5011, "esPrincipal":false, "activo":true, "timestamp":1778363274177}
-{"ip":"localhost", "puerto":5012, "esPrincipal":false, "activo":true, "timestamp":1778363264790}
+{"ip":"localhost", "puerto":5000, "esPrincipal":true, "activo":true, "timestamp":1778363280605}
+{"ip":"localhost", "puerto":5010, "esPrincipal":false, "activo":true, "timestamp":1778363283005}
+{"ip":"localhost", "puerto":5011, "esPrincipal":false, "activo":true, "timestamp":1778363284189}
+{"ip":"localhost", "puerto":5012, "esPrincipal":false, "activo":true, "timestamp":1778363284813}
