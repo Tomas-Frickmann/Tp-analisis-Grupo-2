@@ -97,17 +97,29 @@ public class OperadorControlador implements ActionListener {
     }
     
 	private void reLlamar() {
-	    String respuesta = this.modelo.reLlamar();
-	    
-	    if (Protocolo.SIN_REINTENTOS.equals(respuesta)) {
-	        this.ventana.mostrarMensaje("Reintentos agotados.", "AVISO", JOptionPane.WARNING_MESSAGE);
-	        this.ventana.setBotonRellamarActivo(false); 
-	        this.ventana.actualizarDniAtendiendo("Nadie");
-	    } else {
-	        this.iniciarCooldownRellamar();
-	    }
+	    // 1. Bloqueamos el botón inmediatamente para que no haga doble clic por ansiedad
+	    this.ventana.setBotonRellamarActivo(false); 
+
+	    // 2. Mandamos el trabajo de red a un hilo de fondo para no congelar la pantalla
+	    new Thread(() -> {
+	        String respuesta = this.modelo.reLlamar();
+	        
+	        // 3. Volvemos al hilo de la interfaz para actualizar los carteles
+	        SwingUtilities.invokeLater(() -> {
+	            if (Protocolo.SIN_REINTENTOS.equals(respuesta)) {
+	                this.ventana.mostrarMensaje("Reintentos agotados.", "AVISO", JOptionPane.WARNING_MESSAGE);
+	                this.ventana.actualizarDniAtendiendo("Nadie");
+	            } 
+	            else if (respuesta != null && respuesta.startsWith("ERROR")) {
+	                this.ventana.cambiaEstado("Error de conexión");
+	                this.ventana.setBotonRellamarActivo(true); // Lo volvemos a activar para que reintente luego
+	            }
+	            else {
+	                this.iniciarCooldownRellamar();
+	            }
+	        });
+	    }).start();
 	}
-    
     private void llamarSiguiente() {
         boolean hayAlguien = (this.modelo.getClienteActual() != null);
         boolean tieneReintentos = !this.modelo.isReintentosAgotados();
