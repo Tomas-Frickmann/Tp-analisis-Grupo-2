@@ -9,81 +9,65 @@ import java.util.LinkedList;
 import interfaces.IMonitorListener;
 import util.ConfigServidor;
 import util.Protocolo; 
+import util.GestorJson; // Importamos el gestor
 
 public class MonitorModelo {
     
     private LinkedList<String> historialAtendidos = new LinkedList<>();
-
-    
     private IMonitorListener listener;
     private final int MAX_HISTORIAL = 5;
     
-    private ConfigServidor config;
-
     public MonitorModelo() {
-    	historialAtendidos.add("Esperando turnos...");
-    	
-        this.config = new ConfigServidor("config_servidores.properties");
+        historialAtendidos.add("Esperando turnos...");
+        // Ya no necesitamos usar ConfigServidor para sacar la IP
     }
 
     public void setListener(IMonitorListener listener) {
         this.listener = listener;
-        
     }
 
     public void iniciarEscuchaPermanente() {
         new Thread(() -> {
-            int intentosRestantes = config.getMaxIntentosFallidos();
+            // El monitor nunca muere. Si no hay conexión, sigue intentando para siempre.
+            while (true) { 
+                String[] principal = GestorJson.obtenerPrincipalActivo();
 
-            while (intentosRestantes > 0) {
-                try {
-                    System.out.println("Monitor: Buscando Servidor Principal...");
-                    conectarYEscuchar(config.getIpPrincipal(), config.getPuertoPrincipal());
-                } 
-                catch (Exception e1) {
-                    System.out.println("Monitor: Conexión perdida con el Principal.");
+                if (principal != null) {
+                    String ipActual = principal[0];
+                    int puertoActual = Integer.parseInt(principal[1]);
                     
                     try {
-                        System.out.println("Monitor: Buscando Servidor de Respaldo...");
-                        conectarYEscuchar(config.getIpRespaldo(), config.getPuertoRespaldo());
+                        System.out.println("Monitor: Conectando al líder en " + ipActual + ":" + puertoActual);
+                        conectarYEscuchar(ipActual, puertoActual);
                     } 
-                    catch (Exception e2) {
-                        intentosRestantes--;
-                        System.out.println("⏳ Monitor: Ambos servidores caídos. Intentos: " + intentosRestantes);
-                        
-                        if (intentosRestantes > 0) {
-                            if (listener != null) {
-                               
-                                LinkedList<String> alertaPantalla = new LinkedList<>();
-                                alertaPantalla.add(" RECONECTANDO...");
-                                
-                                
-                                alertaPantalla.addAll(historialAtendidos); 
-                                
-                                
-                                listener.alRecibirNuevoLlamado(alertaPantalla);
-                            }
-                            
-                            try {
-                                Thread.sleep(2000); 
-                            } catch (InterruptedException ie) {
-                                ie.printStackTrace();
-                            }
-                        }
+                    catch (Exception e) {
+                        System.out.println("Monitor: Conexión perdida con el servidor.");
+                        GestorJson.marcarInactivo(ipActual, puertoActual);
+                        mostrarAlertaReconexion();
                     }
+                } else {
+                    System.out.println("Monitor: No hay líder activo en la red. Esperando ascenso...");
+                    mostrarAlertaReconexion();
+                }
+
+                // Pausa antes de volver a buscar en el JSON
+                try {
+                    Thread.sleep(3000); 
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break; // Solo sale si se cierra la aplicación
                 }
             }
-            
-            
-            System.out.println("ERROR FATAL: Sistema offline.");
-            if (listener != null) {
-                LinkedList<String> alertaFatal = new LinkedList<>();
-                alertaFatal.add("SISTEMA FUERA DE LÍNEA");
-                alertaFatal.add("Aguarde, por favor...");
-                listener.alRecibirNuevoLlamado(alertaFatal);
-            }
-
         }).start();
+    }
+    
+    private void mostrarAlertaReconexion() {
+        if (listener != null) {
+            LinkedList<String> alertaPantalla = new LinkedList<>();
+            alertaPantalla.add(" RECONECTANDO...");
+            alertaPantalla.addAll(historialAtendidos); 
+            listener.alRecibirNuevoLlamado(alertaPantalla);
+        }
     }
     
     private void conectarYEscuchar(String ip, int puerto) throws Exception {
@@ -91,13 +75,17 @@ public class MonitorModelo {
              PrintWriter out = new PrintWriter(s.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
 
-           
+            // Nos registramos
             out.println(Protocolo.CMD_REGISTRO_MONITOR);
-            System.out.println("Monitor: Conectado exitosamente a " + ip + ":" + puerto);
+            System.out.println("Monitor: Conectado exitosamente.");
+
+            // Limpiamos el texto de "Reconectando..." si volvimos a conectar
+            if (listener != null) {
+                listener.alRecibirNuevoLlamado(new LinkedList<>(historialAtendidos));
+            }
 
             String mensajeDelServidor;
-            
-           
+            // Escucha bloqueante: se queda acá esperando que el servidor llame clientes
             while ((mensajeDelServidor = in.readLine()) != null) {
                 if (mensajeDelServidor.startsWith(Protocolo.MSG_ACTUALIZAR_MONITOR)) {
                     String[] partes = mensajeDelServidor.split(Protocolo.SEPARADOR);
@@ -106,7 +94,6 @@ public class MonitorModelo {
                     procesarEntrada(dni, puesto);
                 }
             }
-            
             
             throw new Exception("El servidor cerró el flujo de datos de manera abrupta.");
         }

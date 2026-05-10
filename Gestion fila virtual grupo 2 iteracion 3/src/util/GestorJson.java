@@ -7,34 +7,54 @@ import java.util.List;
 
 public class GestorJson {
     private static final String FILE_PATH = "instancias.json";
-    private static final long TOLERANCIA_MS = 20000; // 20 segundos para considerar a alguien "muerto"
+    private static final long TOLERANCIA_MS = 20000; // 20 segundos
 
-    // REGISTRO ATÓMICO: Evita que dos se anoten como principal a la vez
+    // REGISTRO ATÓMICO: Evita colisiones y limpia zombis
     public static synchronized void registrarOActualizar(String ip, int puerto, boolean esPrincipal, boolean activo) {
         List<String> lineas = leerArchivo();
         List<String> nuevasLineas = new ArrayList<>();
         boolean encontrado = false;
         long ahora = System.currentTimeMillis();
 
-        for (String linea : lineas) {
-            String l = linea;
-            // Si yo soy principal, cualquier otro que diga ser principal lo paso a false
-            if (esPrincipal && l.contains("\"esPrincipal\":true") && !l.contains("\"puerto\":" + puerto)) {
-                l = l.replace("\"esPrincipal\":true", "\"esPrincipal\":false");
-            }
+        for (String l : lineas) {
+            if (l.trim().isEmpty()) continue;
 
-            if (l.contains("\"ip\":\"" + ip + "\"") && l.contains("\"puerto\":" + puerto)) {
-                nuevasLineas.add(formatearJson(ip, puerto, esPrincipal, activo, ahora));
-                encontrado = true;
-            } else {
-                nuevasLineas.add(l);
+            try {
+                String ipFila = extraerIP(l);
+                int puertoFila = extraerPuerto(l);
+                boolean esPrincipalFila = l.contains("\"esPrincipal\":true");
+                boolean activoFila = l.contains("\"activo\":true");
+                long timestampFila = extraerTimestamp(l);
+
+                // 1. Limpieza automática de "Zombis" (si pasó el tiempo de tolerancia, lo matamos)
+                if (activoFila && (ahora - timestampFila > TOLERANCIA_MS)) {
+                    activoFila = false;
+                    esPrincipalFila = false;
+                }
+
+                // 2. Si soy yo, renuevo mis datos y mi timestamp
+                if (ipFila.equals(ip) && puertoFila == puerto) {
+                    nuevasLineas.add(formatearJson(ip, puerto, esPrincipal, activo, ahora));
+                    encontrado = true;
+                } else {
+                    // 3. Destituir a otros "Principales" si yo me estoy declarando el nuevo líder
+                    if (esPrincipal && esPrincipalFila) {
+                        esPrincipalFila = false; 
+                    }
+                    // Agrego al otro servidor reconstruyendo su texto limpio
+                    nuevasLineas.add(formatearJson(ipFila, puertoFila, esPrincipalFila, activoFila, timestampFila));
+                }
+            } catch (Exception e) {
+                // Ignorar líneas corruptas del archivo
             }
         }
+
+        // Si no estaba en el archivo, me agrego al final
         if (!encontrado) nuevasLineas.add(formatearJson(ip, puerto, esPrincipal, activo, ahora));
+        
         guardarArchivo(nuevasLineas);
     }
 
-    // EL ÁRBITRO: Decide quién es el heredero legal por puerto menor
     public static synchronized String[] obtenerHeredero() {
         List<String> lineas = leerArchivo();
         List<String> candidatos = new ArrayList<>();
@@ -47,6 +67,7 @@ public class GestorJson {
 
         if (candidatos.isEmpty()) return null;
 
+        // Gana el que tenga el puerto más bajo
         candidatos.sort((a, b) -> Integer.compare(extraerPuerto(a), extraerPuerto(b)));
         String ganador = candidatos.get(0);
         return new String[]{ extraerIP(ganador), String.valueOf(extraerPuerto(ganador)) };
@@ -65,20 +86,26 @@ public class GestorJson {
         List<String> lineas = leerArchivo();
         List<String> nuevasLineas = new ArrayList<>();
         for (String l : lineas) {
-            if (l.contains("\"ip\":\"" + ip + "\"") && l.contains("\"puerto\":" + puerto)) {
-                nuevasLineas.add(formatearJson(ip, puerto, false, false, System.currentTimeMillis()));
-            } else { nuevasLineas.add(l); }
+            if (l.trim().isEmpty()) continue;
+            try {
+                if (extraerIP(l).equals(ip) && extraerPuerto(l) == puerto) {
+                    nuevasLineas.add(formatearJson(ip, puerto, false, false, System.currentTimeMillis()));
+                } else { 
+                    nuevasLineas.add(l); 
+                }
+            } catch (Exception e) { }
         }
         guardarArchivo(nuevasLineas);
     }
 
-    // Helpers de extracción
+    // --- Helpers de extracción seguros ---
     private static int extraerPuerto(String l) { return Integer.parseInt(l.split("\"puerto\":")[1].split(",")[0].trim()); }
     private static String extraerIP(String l) { return l.split("\"ip\":\"")[1].split("\"")[0]; }
+    private static long extraerTimestamp(String l) { return Long.parseLong(l.split("\"timestamp\":")[1].replace("}", "").trim()); }
 
     private static boolean esRegistroViejo(String linea) {
         try {
-            long ts = Long.parseLong(linea.split("\"timestamp\":")[1].replace("}", "").trim());
+            long ts = extraerTimestamp(linea);
             return (System.currentTimeMillis() - ts) > TOLERANCIA_MS;
         } catch (Exception e) { return true; }
     }
