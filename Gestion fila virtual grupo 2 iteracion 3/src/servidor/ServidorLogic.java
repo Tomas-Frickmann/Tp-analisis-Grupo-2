@@ -164,15 +164,22 @@ public class ServidorLogic {
 
         // Lógica de Servidor Activo (Solo Principal)
         switch (comando) {
-            case Protocolo.CMD_LLAMAR: return llamarSiguienteCliente(partes[1]);
+            case Protocolo.CMD_LLAMAR: 
+            	return llamarSiguienteCliente(partes[1]);
             case Protocolo.CMD_REGISTRO:
                 Puesto p = buscarPuestoPorId(partes[2]);
-                if (p != null) return Protocolo.ERR_PUESTO_EXISTE;
+                if (p != null) 
+                	
+                	return Protocolo.ERR_PUESTO_EXISTE;
                 anadirPuesto(partes[1], partes[3], partes[2]);
+                
                 return Protocolo.OK_REGISTRADO;
-            case Protocolo.CMD_RELLAMAR: return Rellamar(partes[1]);
-            case Protocolo.CMD_INFO_FILA: return String.valueOf(colaClientesEnEspera.size());
-            case Protocolo.CMD_NUEVO_CLIENTE: return validaCliente(partes[1]);
+            case Protocolo.CMD_RELLAMAR:
+            	return Rellamar(partes[1]);
+            case Protocolo.CMD_INFO_FILA: 
+            	return String.valueOf(colaClientesEnEspera.size());
+            case Protocolo.CMD_NUEVO_CLIENTE: 
+            	return validaCliente(partes[1]);
             case Protocolo.CMD_DESCONECTAR:
                 Puesto pd = buscarPuestoPorId(partes[1]);
                 if (pd != null) pd.setActivo(false);
