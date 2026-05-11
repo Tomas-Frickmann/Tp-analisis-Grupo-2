@@ -50,7 +50,7 @@ public class Puesto {
 	}
 	public void asignarClienteAlPuesto(Cliente c) {
 		setDni(c.getDni());
-		setReintentos(3);
+		setReintentos(2);
 	}
 	public boolean isActivo() {
 		return activo;

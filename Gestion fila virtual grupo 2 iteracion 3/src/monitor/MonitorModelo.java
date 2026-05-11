@@ -42,7 +42,6 @@ public class MonitorModelo {
                     } 
                     catch (Exception e) {
                         System.out.println("Monitor: Conexión perdida con el servidor.");
-                        GestorJson.marcarInactivo(ipActual, puertoActual);
                         mostrarAlertaReconexion();
                     }
                 } else {

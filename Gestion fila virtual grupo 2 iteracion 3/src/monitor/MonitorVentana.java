@@ -112,17 +112,29 @@ public class MonitorVentana extends JFrame implements IVentana {
         
         SwingUtilities.invokeLater(() -> {
             String actual = historial.getFirst();
-            String textoGigante = "<html><div style='text-align: center;'>" + actual.replace(" - ", "<br>") + "</div></html>";
-            lblActual.setText(textoGigante);  
             
-            iniciarParpadeo();
-            reproducirSonido();
+            // 1. Verificamos si es un mensaje de sistema o un turno real
+            boolean esMensajeSistema = actual.equals("Esperando turnos...") || actual.equals(" RECONECTANDO...");
+
+            if (!esMensajeSistema) {
+                // Es un turno real, aplicamos HTML, parpadeo y sonido
+                String textoGigante = "<html><div style='text-align: center;'>" + actual.replace(" - ", "<br>") + "</div></html>";
+                lblActual.setText(textoGigante);  
+                iniciarParpadeo();
+                reproducirSonido();
+            } else {
+                // Es un aviso del sistema, lo ponemos en texto plano sin ruidos
+                lblActual.setText(actual);
+                // Aseguramos que el texto sea visible y no quede trabado en el color de fondo
+                lblActual.setForeground(Color.WHITE); 
+            }
             
+            // Actualizamos la lista lateral (historial)
             modeloHistorial.clear();
             Iterator<String> it = historial.iterator();
             
             if (it.hasNext()) {
-                it.next(); 
+                it.next(); // Saltamos el actual
             }
 
             while (it.hasNext()) {
@@ -133,17 +145,18 @@ public class MonitorVentana extends JFrame implements IVentana {
             this.repaint();
         });
     }
+
     private void iniciarParpadeo() {
-        
         if (blinkTimer != null && blinkTimer.isRunning()) {
             blinkTimer.stop();
         }
 
         contadorParpadeo = 0;
         Color colorOriginal = Color.WHITE;
-       
-
         
+        // 2. Nos aseguramos de arrancar siempre visibles por si se pisaron dos llamados
+        lblActual.setForeground(colorOriginal); 
+
         blinkTimer = new javax.swing.Timer(250, e -> {
             if (contadorParpadeo < 10) { 
                 if (lblActual.getForeground().equals(colorOriginal)) {
@@ -153,7 +166,7 @@ public class MonitorVentana extends JFrame implements IVentana {
                 }
                 contadorParpadeo++;
             } else {
-                
+                // Al terminar el ciclo de parpadeo, forzamos que quede visible
                 lblActual.setForeground(colorOriginal);
                 blinkTimer.stop();
             }

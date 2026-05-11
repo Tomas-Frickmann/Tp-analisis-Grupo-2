@@ -44,6 +44,10 @@ public class TerminalRegistroControlador implements ActionListener {
             this.view.mostrarMensaje("El DNI no puede estar vacio.", "DNI INVÁLIDO", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (Integer.parseInt(dni)<1) {
+        	this.view.mostrarMensaje("El DNI no puede ser 0.", "DNI INVÁLIDO", JOptionPane.WARNING_MESSAGE);
+            return;
+        }	
         if (dni.length() < 6) {
             this.view.mostrarMensaje("El DNI debe tener por lo menos 6 digitos.", "DNI INVÁLIDO", JOptionPane.WARNING_MESSAGE);
             return;

@@ -6,7 +6,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import util.ConfigServidor;
 import util.Protocolo;
-import util.GestorJson; // Importamos el gestor
+import util.GestorJson;
 
 public class TerminalRegistroModelo {
     
@@ -32,9 +32,8 @@ public class TerminalRegistroModelo {
                     return conectarYEnviar(ipActual, puertoActual, mensaje);
                 } 
                 catch (Exception e) {
-                    System.err.println("[RED] El Principal del JSON (" + puertoActual + ") no responde.");
-                    // Forzamos la baja en el JSON para ayudar a la red
-                    GestorJson.marcarInactivo(ipActual, puertoActual);
+                    System.err.println("[RED] El Principal del JSON (" + puertoActual + ") no responde. Reintentando...");
+                    // Eliminada la línea que forzaba la baja en el JSON desde el cliente
                 }
             } else {
                 System.out.println("[SISTEMA] Buscando servidor líder en la red...");

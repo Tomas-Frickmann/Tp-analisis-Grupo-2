@@ -94,16 +94,16 @@ public class OperadorModelo {
         }
     }
 
-    public boolean registrarEnServidor() {
-        String mensajeRegistro = Protocolo.CMD_REGISTRO + Protocolo.SEPARADOR + 
-                                 this.miIp + Protocolo.SEPARADOR + 
-                                 this.idPuesto + Protocolo.SEPARADOR + 
-                                 this.miPuertoLocal;
-        
-        String respuesta = comunicacionConReitento(mensajeRegistro);
-        return Protocolo.OK_REGISTRADO.equals(respuesta);
-    }
-    
+	    public boolean registrarEnServidor() {
+	        String mensajeRegistro = Protocolo.CMD_REGISTRO + Protocolo.SEPARADOR + 
+	                                 this.miIp + Protocolo.SEPARADOR + 
+	                                 this.idPuesto + Protocolo.SEPARADOR + 
+	                                 this.miPuertoLocal;
+	        
+	        String respuesta = comunicacionConReitento(mensajeRegistro);
+	        return Protocolo.OK_REGISTRADO.equals(respuesta);
+	    }
+	    
     public String llamarSiguiente() {
         String comando = Protocolo.CMD_LLAMAR + Protocolo.SEPARADOR + this.idPuesto;
         String res = comunicacionConReitento(comando);

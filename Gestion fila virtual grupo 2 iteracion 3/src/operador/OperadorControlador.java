@@ -153,16 +153,21 @@ public class OperadorControlador implements ActionListener {
         }).start();
     }
     
-	public boolean registrarEnServidor() {
+    public boolean registrarEnServidor() {
 		boolean respuesta = this.modelo.registrarEnServidor();
+        
 		if (respuesta) {
 		    this.ventana.mostrarMensaje("Registrado exitosamente en el servidor central.", "Registro Exitoso", JOptionPane.INFORMATION_MESSAGE);
 		} else {
-			this.ventana.mostrarMensaje("El Servidor Central rechazó la conexión, el puesto ya existe.", "Puesto Existente", JOptionPane.ERROR_MESSAGE);
+            // Evaluamos si falló por falta de red pidiendo el tamaño de la fila al modelo
+            if (this.modelo.obtenerTamañoFila().equals("-")) {
+                this.ventana.mostrarMensaje("No hay conexión con el Servidor Central.", "Error de Red", JOptionPane.ERROR_MESSAGE);
+            } else {
+			    this.ventana.mostrarMensaje("El Servidor Central rechazó la conexión, el puesto ya existe.", "Puesto Existente", JOptionPane.ERROR_MESSAGE);
+            }
 		}
 		return respuesta;
 	}
-
 	public void configurarPuesto(String idPuesto) {
 		this.modelo.configurarPuesto(idPuesto);
 	}
