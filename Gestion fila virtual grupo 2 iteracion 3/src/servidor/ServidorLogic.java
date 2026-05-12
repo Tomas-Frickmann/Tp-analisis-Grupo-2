@@ -137,9 +137,22 @@ public class ServidorLogic {
                         puestoDesconectar.setActivo(false);
                     }
                     break;
+                case "CLON_RELLAMAR":
+                	try { Thread.sleep(500); } catch (Exception e) {}
+                    Puesto p = buscarPuestoPorId(partes[0]); 
+                    if (p != null)  { 
+                    if (p.getReintentos()>0) {
+                    	p.disminuirReintento();
+                    	actualizarPantallas(p.getDni(), partes[0]);
+                    }
+                    }
+                    
+           
+                    break;
             }
             return "OK_CLON";
         }
+        
 
         // Si soy respaldo pero el comando no es un CLON, rechazo la petición
         if (esRespaldo) {
@@ -198,15 +211,51 @@ public class ServidorLogic {
                 }
                 
             case Protocolo.CMD_NUEVO_CLIENTE:
-                colaClientesEnEspera.addLast(new Cliente(partes[1]));
-                replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + partes[1]);
-                return Protocolo.OK_CLIENTE_CREADO;
+            	
+            	
+                
+               
+                return validaCliente(partes[1]);
+            case Protocolo.CMD_INFO_FILA:
+				return String.valueOf(colaClientesEnEspera.size());
+				
+            case Protocolo.CMD_RELLAMAR:
+            	 return this.Rellamar(partes[1]);
+				
+				
                 
             default: 
                 return Protocolo.ERR_COMANDO;
         }
     }
-
+    public synchronized void anadirCliente(String dni) {
+        colaClientesEnEspera.addLast(new Cliente(dni));
+         replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + dni);
+        System.out.println("Servidor: Cliente " + dni + " añadido a la fila normal.");
+    }
+    public synchronized String validaCliente(String dni) {
+        for (Cliente aux : colaClientesEnEspera) {
+            if (aux.getDni().equals(dni)) return Protocolo.ERR_DNI_DUPLICADO; 
+        }
+        anadirCliente(dni);
+        return Protocolo.OK_CLIENTE_CREADO;
+    }
+    public synchronized String Rellamar(String nroPuesto) {
+        
+        try { Thread.sleep(500); } catch (Exception e) {}
+        Puesto p = buscarPuestoPorId(nroPuesto); 
+        if (p == null) return Protocolo.ERR_PUESTO_NO_EXISTE;        
+        if (p.getReintentos()>0) {
+        	p.disminuirReintento();
+        	actualizarPantallas(p.getDni(), nroPuesto);
+        	
+        	replicarEnRespaldo("CLON_RELLAMAR" + Protocolo.SEPARADOR + nroPuesto);
+        	return p.getDni(); 
+        	}
+        else {
+        	replicarEnRespaldo("CLON_RELLAMAR" + Protocolo.SEPARADOR + nroPuesto);
+        	return Protocolo.SIN_REINTENTOS;
+        }}
     private void descargarEstadoInicial() {
         // Buscamos quién es el principal actual en el JSON, no en el config
         String[] principalActual = GestorJson.obtenerPrincipalActivo();
