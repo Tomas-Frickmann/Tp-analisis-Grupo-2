@@ -30,8 +30,9 @@ public class GestorJson {
             boolean encontrado = false;
 
             for (String l : lineas) {
-                if (l.trim().isEmpty()) {
-                    continue;
+                // Filtro anti-basura: Ignorar líneas vacías o mal formadas
+                if (l == null || l.trim().isEmpty() || !l.contains("{")) {
+                    continue; 
                 }
                 
                 try {
@@ -56,7 +57,8 @@ public class GestorJson {
                         nuevasLineas.add(formatearJson(ipFila, puertoFila, esPrincipalFila, activoFila, timestampFila));
                     }
                 } catch (Exception e) {
-                    // Si una línea está corrupta, la ignoramos y pasamos a la siguiente
+                    // Si falla el parseo de una línea en particular, la ignoramos y seguimos
+                    continue;
                 }
             }
             
@@ -64,18 +66,18 @@ public class GestorJson {
                 nuevasLineas.add(formatearJson(ip, puerto, esPrincipal, activo, ahora));
             }
 
+            // Vaciamos el archivo
             raf.setLength(0);
             
-            try (PrintWriter out = new PrintWriter(java.nio.channels.Channels.newOutputStream(channel))) {
-                for (String nl : nuevasLineas) {
-                    out.println(nl);
-                }
+            // ESCRIBIMOS DIRECTO CON EL RAF (Evita el ClosedChannelException)
+            for (String nl : nuevasLineas) {
+                raf.writeBytes(nl + "\n");
             }
+            
         } catch (IOException e) { 
             System.err.println("Error JSON Atómico: " + e.getMessage()); 
         }
     }
-
     public static void marcarInactivo(String ip, int puerto) {
         try (RandomAccessFile raf = new RandomAccessFile(FILE_PATH, "rw");
              FileChannel channel = raf.getChannel();
@@ -89,22 +91,24 @@ public class GestorJson {
                 lineas.add(l); 
             }
 
+            // Vaciamos el archivo
             raf.setLength(0);
             
-            try (PrintWriter out = new PrintWriter(java.nio.channels.Channels.newOutputStream(channel))) {
-                for (String linea : lineas) {
-                    if (linea.contains("\"ip\":\"" + ip + "\"") && linea.contains("\"puerto\":" + puerto)) {
-                        out.println(formatearJson(ip, puerto, false, false, System.currentTimeMillis()));
-                    } else { 
-                        out.println(linea); 
-                    }
+            // ESCRIBIMOS DIRECTO CON EL RAF
+            for (String linea : lineas) {
+                if (linea == null || linea.trim().isEmpty()) continue; // Ignoramos basura
+
+                if (linea.contains("\"ip\":\"" + ip + "\"") && linea.contains("\"puerto\":" + puerto)) {
+                    raf.writeBytes(formatearJson(ip, puerto, false, false, System.currentTimeMillis()) + "\n");
+                } else { 
+                    raf.writeBytes(linea + "\n"); 
                 }
             }
+            
         } catch (IOException e) {
             System.err.println("Error al marcar inactivo: " + e.getMessage());
         }
     }
-
     public static synchronized List<String[]> obtenerRespaldosActivos() {
         List<String[]> respaldos = new ArrayList<>();
         

@@ -19,6 +19,8 @@ public class OperadorModelo {
     private int miPuertoLocal;
     private String clienteActual = null;
     private boolean reintentosAgotados = false;
+    private String ipLiderActual = null;
+    private int puertoLiderActual = -1;
 
     public OperadorModelo() {
         this.config = new ConfigServidor("config_servidores.properties");
@@ -42,49 +44,49 @@ public class OperadorModelo {
         int intentosRestantes = config.getMaxIntentosFallidos();
 
         while (intentosRestantes > 0) {
-            // 1. Buscamos en el archivo JSON quién está marcado como Principal y Activo
-            String[] datosPrincipal = GestorJson.obtenerPrincipalActivo();
-            
-            if (datosPrincipal != null) {
-                String ipActual = datosPrincipal[0];
-                int puertoActual = Integer.parseInt(datosPrincipal[1]);
+            // 1. CACHÉ: Solo leemos el JSON si no sabemos quién es el líder
+            if (ipLiderActual == null) {
+                String[] datosPrincipal = GestorJson.obtenerPrincipalActivo();
+                if (datosPrincipal != null) {
+                    ipLiderActual = datosPrincipal[0];
+                    puertoLiderActual = Integer.parseInt(datosPrincipal[1]);
+                }
+            }
 
+            if (ipLiderActual != null) {
                 try {
-                    // 2. Intentamos la conexión con el líder detectado
-                    String respuesta = conectarYEnviar(ipActual, puertoActual, comando);
+                    // 2. Intentamos conectar directo usando la memoria
+                    String respuesta = conectarYEnviar(ipLiderActual, puertoLiderActual, comando);
                     
-                    // 3. Manejo de "Amnesia": Si el servidor no tiene registrado este puesto
                     if (Protocolo.ERR_PUESTO_NO_EXISTE.equals(respuesta) && !comando.startsWith(Protocolo.CMD_REGISTRO)) {
                         System.out.println("[SISTEMA] El servidor no reconoce el puesto. Registrando...");
-                        registrarEnServidor(); // Auto-registro
-                        return conectarYEnviar(ipActual, puertoActual, comando); // Reintento
+                        registrarEnServidor(); 
+                        return conectarYEnviar(ipLiderActual, puertoLiderActual, comando); 
                     }
                     
                     return respuesta; // Éxito total
 
                 } catch (Exception e) {
-                    // Si el socket falla (ej: el servidor murió justo ahora)
-                    System.err.println("[RED] El Principal del JSON (" + puertoActual + ") no responde físicamente.");
+                    // 3. Si la conexión falla (el servidor murió), limpiamos el caché
+                    // para obligar a que busque en el JSON en la próxima vuelta.
+                    System.err.println("[RED] El líder actual no responde. Buscando en el JSON...");
+                    ipLiderActual = null; 
                 }
             } else {
-                // Si el JSON no devuelve a nadie, es porque el Principal cayó 
-                // y los Respaldos todavía están en el proceso de ascenso.
                 System.out.println("[SISTEMA] No se encuentra un líder activo en el JSON. Esperando ascenso...");
             }
 
-            // Bajamos una vida y esperamos un momento antes de volver a consultar el JSON
             intentosRestantes--;
             try { 
-                Thread.sleep(2000); // Pausa para dar tiempo a que un respaldo suba a principal
+                Thread.sleep(2000); 
             } catch (InterruptedException ie) { 
                 Thread.currentThread().interrupt(); 
             }
         }
 
-        System.out.println("ERROR FATAL: No se pudo contactar con ningún servidor líder tras varios intentos.");
+        System.out.println("ERROR FATAL: No se pudo contactar con ningún servidor líder.");
         return Protocolo.ERR_CONEXION; 
     }
-
     private String conectarYEnviar(String ip, int puerto, String comando) throws Exception {
         try (Socket s = new Socket(ip, puerto);
              PrintWriter out = new PrintWriter(s.getOutputStream(), true);

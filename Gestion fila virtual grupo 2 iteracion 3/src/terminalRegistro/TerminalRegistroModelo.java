@@ -11,6 +11,10 @@ import util.GestorJson;
 public class TerminalRegistroModelo {
     
     private ConfigServidor config;
+    
+    // VARIABLES DE CACHÉ: Evitan leer el disco rígido innecesariamente
+    private String ipLiderActual = null;
+    private int puertoLiderActual = -1;
 
     public TerminalRegistroModelo() {
         this.config = new ConfigServidor("config_servidores.properties");
@@ -21,19 +25,24 @@ public class TerminalRegistroModelo {
         int intentosRestantes = config.getMaxIntentosFallidos();
 
         while (intentosRestantes > 0) {
-            // Buscamos quién manda en este momento
-            String[] principal = GestorJson.obtenerPrincipalActivo();
+            // 1. CACHÉ: Solo buscamos en el JSON si no sabemos quién manda
+            if (ipLiderActual == null) {
+                String[] principal = GestorJson.obtenerPrincipalActivo();
+                if (principal != null) {
+                    ipLiderActual = principal[0];
+                    puertoLiderActual = Integer.parseInt(principal[1]);
+                }
+            }
 
-            if (principal != null) {
-                String ipActual = principal[0];
-                int puertoActual = Integer.parseInt(principal[1]);
-
+            if (ipLiderActual != null) {
                 try {
-                    return conectarYEnviar(ipActual, puertoActual, mensaje);
+                    // 2. Intentamos conectar usando la info en memoria
+                    return conectarYEnviar(ipLiderActual, puertoLiderActual, mensaje);
                 } 
                 catch (Exception e) {
-                    System.err.println("[RED] El Principal del JSON (" + puertoActual + ") no responde. Reintentando...");
-                    // Eliminada la línea que forzaba la baja en el JSON desde el cliente
+                    System.err.println("[RED] El líder (" + puertoLiderActual + ") no responde. Buscando en el JSON...");
+                    // 3. Si falla la red, vaciamos el caché para obligar a leer el JSON en el próximo intento
+                    ipLiderActual = null; 
                 }
             } else {
                 System.out.println("[SISTEMA] Buscando servidor líder en la red...");

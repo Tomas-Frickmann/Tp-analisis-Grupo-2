@@ -7,9 +7,8 @@ import java.net.Socket;
 import java.util.LinkedList;
 
 import interfaces.IMonitorListener;
-import util.ConfigServidor;
 import util.Protocolo; 
-import util.GestorJson; // Importamos el gestor
+import util.GestorJson; 
 
 public class MonitorModelo {
     
@@ -17,9 +16,12 @@ public class MonitorModelo {
     private IMonitorListener listener;
     private final int MAX_HISTORIAL = 5;
     
+    // VARIABLES DE CACHÉ: Protegen el disco rígido
+    private String ipLiderActual = null;
+    private int puertoLiderActual = -1;
+    
     public MonitorModelo() {
         historialAtendidos.add("Esperando turnos...");
-        // Ya no necesitamos usar ConfigServidor para sacar la IP
     }
 
     public void setListener(IMonitorListener listener) {
@@ -30,26 +32,34 @@ public class MonitorModelo {
         new Thread(() -> {
             // El monitor nunca muere. Si no hay conexión, sigue intentando para siempre.
             while (true) { 
-                String[] principal = GestorJson.obtenerPrincipalActivo();
+                
+                // 1. CACHÉ: Solo buscamos en el JSON si perdimos el rastro del líder
+                if (ipLiderActual == null) {
+                    String[] principal = GestorJson.obtenerPrincipalActivo();
+                    if (principal != null) {
+                        ipLiderActual = principal[0];
+                        puertoLiderActual = Integer.parseInt(principal[1]);
+                    }
+                }
 
-                if (principal != null) {
-                    String ipActual = principal[0];
-                    int puertoActual = Integer.parseInt(principal[1]);
-                    
+                if (ipLiderActual != null) {
                     try {
-                        System.out.println("Monitor: Conectando al líder en " + ipActual + ":" + puertoActual);
-                        conectarYEscuchar(ipActual, puertoActual);
+                        System.out.println("Monitor: Conectando al líder en " + ipLiderActual + ":" + puertoLiderActual);
+                        // 2. Intentamos conectar directo con los datos en memoria
+                        conectarYEscuchar(ipLiderActual, puertoLiderActual);
                     } 
                     catch (Exception e) {
-                        System.out.println("Monitor: Conexión perdida con el servidor.");
+                        System.out.println("Monitor: Conexión perdida con el servidor. Buscando en el JSON...");
                         mostrarAlertaReconexion();
+                        // 3. Si se cortó la conexión, limpiamos la memoria para obligarlo a leer el JSON
+                        ipLiderActual = null;
                     }
                 } else {
                     System.out.println("Monitor: No hay líder activo en la red. Esperando ascenso...");
                     mostrarAlertaReconexion();
                 }
 
-                // Pausa antes de volver a buscar en el JSON
+                // Pausa antes de volver a intentar
                 try {
                     Thread.sleep(3000); 
                 } catch (InterruptedException ie) {
