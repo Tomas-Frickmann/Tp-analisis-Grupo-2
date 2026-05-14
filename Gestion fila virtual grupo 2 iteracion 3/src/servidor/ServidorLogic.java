@@ -56,7 +56,7 @@ public class ServidorLogic {
                          PrintWriter out = new PrintWriter(s.getOutputStream(), true)) {
                         out.println(comando);
                     } catch (Exception e) {
-                        // Ignoramos si un secundario se cayó
+                        
                     }
                 }
             }).start();
@@ -98,14 +98,14 @@ public class ServidorLogic {
                 out.println(procesarAccion(partes));
             }
         } catch (Exception e) {
-            // Error de conexión con el cliente/puesto
+            
         }
     }
 
     private synchronized String procesarAccion(String[] partes) {
         String comando = partes[0];
 
-        // --- LÓGICA DE CLONACIÓN PARA SECUNDARIOS ---
+       
         if (esRespaldo && comando.startsWith("CLON_")) {
             switch (comando) {
                 case "CLON_CLIENTE": 
@@ -113,7 +113,15 @@ public class ServidorLogic {
                     break;
                     
                 case "CLON_PUESTO": 
-                    listaPuestosRegistrados.add(new Puesto(partes[1], partes[2], partes[3], true)); 
+                	String ip= partes[1];
+                	String puerto= partes[2];
+                	int nroPuesto= Integer.parseInt(partes[3]);
+                	boolean activo= partes[4].equals("1");
+                	String dni= partes[5];
+                	int reintentos = Integer.parseInt(partes[6]);           	
+                	
+                    listaPuestosRegistrados.add(new Puesto( ip,  puerto,  dni,  reintentos,  nroPuesto,  activo));
+                	
                     break;
                     
                 case "CLON_ACTIVA_PUESTO": 
@@ -159,8 +167,17 @@ public class ServidorLogic {
             return Protocolo.ERR_CONEXION;
         }
 
-        // --- LÓGICA PRINCIPAL DEL SISTEMA ---
+       
         switch (comando) {
+        case Protocolo.CMD_DESCONECTAR:
+				Puesto puestoDesconectar = buscarPuestoPorId(partes[1]);
+				if (puestoDesconectar != null) {
+					puestoDesconectar.setActivo(false);
+					replicarEnRespaldo("CLON_DESCONECTAR" + Protocolo.SEPARADOR + partes[1]);
+					return Protocolo.OK_DESCONECTAR;
+				}
+				
+				return Protocolo.ERR_PUESTO_NO_EXISTE;
             case Protocolo.CMD_REGISTRO:
                 Puesto puestoExistente = buscarPuestoPorId(partes[2]);
                 if (puestoExistente != null) {
@@ -177,6 +194,7 @@ public class ServidorLogic {
                 replicarEnRespaldo("CLON_PUESTO" + Protocolo.SEPARADOR + partes[1] + Protocolo.SEPARADOR + partes[3] + Protocolo.SEPARADOR + partes[2]);
                 return Protocolo.OK_REGISTRADO;
                 
+                
             case Protocolo.CMD_LLAMAR:
                 Puesto puestoAsignar = buscarPuestoPorId(partes[1]);
                 Cliente clienteEnCola = colaClientesEnEspera.poll();
@@ -189,6 +207,7 @@ public class ServidorLogic {
                 }
                 return Protocolo.ERR_FILA_VACIA;
                 
+                
             case Protocolo.CMD_PEDIR_ESTADO:
                 StringBuilder estadoComprimido = new StringBuilder();
                 
@@ -196,8 +215,16 @@ public class ServidorLogic {
                     estadoComprimido.append("CLON_PUESTO").append(Protocolo.SEPARADOR)
                                     .append(pu.getIp()).append(Protocolo.SEPARADOR)
                                     .append(pu.getPuerto()).append(Protocolo.SEPARADOR)
-                                    .append(pu.getNroPuesto()).append(Protocolo.SEP_ESTADO);
+                                    .append(pu.getNroPuesto()).append(Protocolo.SEPARADOR)
+                                    .append(pu.isActivo() ? "1" : "0").append(Protocolo.SEPARADOR)
+                                    .append(pu.getDni()).append(Protocolo.SEPARADOR)
+                                    .append(pu.getReintentos ()).append(Protocolo.SEP_ESTADO);
+                                    
                 }
+            	
+            	
+           
+            	
                 
                 for (Cliente cu : colaClientesEnEspera) {
                     estadoComprimido.append("CLON_CLIENTE").append(Protocolo.SEPARADOR)

@@ -18,6 +18,17 @@ public class Puesto {
 	
 	
 	}
+	
+	public Puesto(String ip, String puerto, String dni, int reintentos, int nroPuesto, boolean activo) {
+		super();
+		this.ip = ip;
+		this.puerto = puerto;
+		this.dni = dni;
+		this.reintentos = reintentos;
+		this.nroPuesto = nroPuesto;
+		this.activo = activo;
+	}
+
 	public String getIp() {
 		return ip;
 	}

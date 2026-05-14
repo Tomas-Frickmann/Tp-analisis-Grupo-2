@@ -29,4 +29,5 @@ public class Protocolo {
 	public static final String CMD_PEDIR_ESTADO = "PEDIR_ESTADO";
     public static final String SEP_ESTADO = "@@";
 	
+	
 }
