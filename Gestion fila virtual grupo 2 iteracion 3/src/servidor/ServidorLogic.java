@@ -135,7 +135,10 @@ public class ServidorLogic {
                     Cliente clienteLlamado = colaClientesEnEspera.poll();
                     Puesto puestoLlamador = buscarPuestoPorId(partes[1]); 
                     if (puestoLlamador != null && clienteLlamado != null) {
+                    	System.out.println("Puesto " + puestoLlamador.getNroPuesto() + " asignado al cliente " + clienteLlamado.getDni() + " (replicado)");
                         puestoLlamador.asignarClienteAlPuesto(clienteLlamado);
+                        System.out.println(clienteLlamado.getDni()+puestoLlamador.getReintentos());
+                        
                     }
                     break;
                     
@@ -146,19 +149,22 @@ public class ServidorLogic {
                     }
                     break;
                 case "CLON_RELLAMAR":
-                	try { Thread.sleep(500); } catch (Exception e) {}
-                    Puesto p = buscarPuestoPorId(partes[0]); 
-                    if (p != null)  { 
-                    if (p.getReintentos()>0) {
-                    	p.disminuirReintento();
-                    	actualizarPantallas(p.getDni(), partes[0]);
-                    }
-                    }
+                	
+                    Puesto p = buscarPuestoPorId(partes[1]); 
+                    System.out.println(p.getNroPuesto() + " tiene " + p.getReintentos() + " reintentos antes de perder al cliente. soy respaldo");
+                  
+                   if (p.getReintentos()>0) {
+                   p.disminuirReintento();
+                   System.out.println(p.getNroPuesto() + " tiene " + p.getReintentos() + " reintentos antes de perder al cliente. soy respaldo");
+                   }
+                   
+						
                     
            
                     break;
             }
             return "OK_CLON";
+            
         }
         
 
@@ -191,7 +197,10 @@ public class ServidorLogic {
                     return Protocolo.OK_REGISTRADO;
                 }
                 listaPuestosRegistrados.add(new Puesto(partes[1], partes[3], partes[2], true));
-                replicarEnRespaldo("CLON_PUESTO" + Protocolo.SEPARADOR + partes[1] + Protocolo.SEPARADOR + partes[3] + Protocolo.SEPARADOR + partes[2]);
+               String  cadena=("CLON_PUESTO"+Protocolo.SEPARADOR+partes[1]+Protocolo.SEPARADOR+ partes[3]+
+            		   Protocolo.SEPARADOR+partes[2]+Protocolo.SEPARADOR+"1"+Protocolo.SEPARADOR+"VACIO"+Protocolo.SEPARADOR+"0");
+                
+                replicarEnRespaldo(cadena);
                 return Protocolo.OK_REGISTRADO;
                 
                 
@@ -203,6 +212,7 @@ public class ServidorLogic {
                     puestoAsignar.asignarClienteAlPuesto(clienteEnCola); 
                     actualizarPantallas(clienteEnCola.getDni(), partes[1]);
                     replicarEnRespaldo("CLON_LLAMAR" + Protocolo.SEPARADOR + partes[1]);
+                    
                     return clienteEnCola.getDni();
                 }
                 return Protocolo.ERR_FILA_VACIA;
@@ -255,6 +265,7 @@ public class ServidorLogic {
                 return Protocolo.ERR_COMANDO;
         }
     }
+    
     public synchronized void anadirCliente(String dni) {
         colaClientesEnEspera.addLast(new Cliente(dni));
          replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + dni);
@@ -277,6 +288,8 @@ public class ServidorLogic {
         	actualizarPantallas(p.getDni(), nroPuesto);
         	
         	replicarEnRespaldo("CLON_RELLAMAR" + Protocolo.SEPARADOR + nroPuesto);
+        	System.out.println(p.getNroPuesto() + " tiene " + p.getReintentos() + " reintentos antes de perder al cliente. soy principal");
+        	
         	return p.getDni(); 
         	}
         else {
@@ -361,6 +374,9 @@ public class ServidorLogic {
                                 GestorJson.registrarOActualizar(ip, puertoServidor, true, true);
                                 actualizarIdentidad();
                                 System.out.println("! >>> ME HE CONVERTIDO EN EL NUEVO PRINCIPAL <<<");
+                                System.out.println(colaClientesEnEspera);
+                                System.out.println(listaPuestosRegistrados);
+                                System.out.println(monitoresConectados);
                                 break; // Rompemos el bucle de vigilancia
                             }
                         }
