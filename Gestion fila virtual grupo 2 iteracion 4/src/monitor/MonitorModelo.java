@@ -10,18 +10,16 @@ import interfaces.IMonitorListener;
 import util.Protocolo; 
 import util.GestorJson; 
 import seguridad.SeguridadFacade;
+
 public class MonitorModelo {
     
-    private LinkedList<String> historialAtendidos = new LinkedList<>();
     private IMonitorListener listener;
-    private final int MAX_HISTORIAL = 5;
-    
-    
+
     private String ipLiderActual = null;
     private int puertoLiderActual = -1;
     
     public MonitorModelo() {
-        historialAtendidos.add("Esperando turnos...");
+
     }
 
     public void setListener(IMonitorListener listener) {
@@ -30,10 +28,7 @@ public class MonitorModelo {
 
     public void iniciarEscuchaPermanente() {
         new Thread(() -> {
-            
             while (true) { 
-                
-                
                 if (ipLiderActual == null) {
                     String[] principal = GestorJson.obtenerPrincipalActivo();
                     if (principal != null) {
@@ -45,13 +40,11 @@ public class MonitorModelo {
                 if (ipLiderActual != null) {
                     try {
                         System.out.println("Monitor: Conectando al líder en " + ipLiderActual + ":" + puertoLiderActual);
-                        
                         conectarYEscuchar(ipLiderActual, puertoLiderActual);
                     } 
                     catch (Exception e) {
                         System.out.println("Monitor: Conexión perdida con el servidor. Buscando en el JSON...");
                         mostrarAlertaReconexion();
-                        
                         ipLiderActual = null;
                     }
                 } else {
@@ -59,7 +52,6 @@ public class MonitorModelo {
                     mostrarAlertaReconexion();
                 }
 
-                
                 try {
                     Thread.sleep(3000); 
                 } catch (InterruptedException ie) {
@@ -74,7 +66,7 @@ public class MonitorModelo {
         if (listener != null) {
             LinkedList<String> alertaPantalla = new LinkedList<>();
             alertaPantalla.add(" RECONECTANDO...");
-            alertaPantalla.addAll(historialAtendidos); 
+            // Como ya no hay memoria local, solo mostramos el cartel de reconexión
             listener.alRecibirNuevoLlamado(alertaPantalla);
         }
     }
@@ -84,40 +76,38 @@ public class MonitorModelo {
              PrintWriter out = new PrintWriter(s.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
 
-            
             out.println(Protocolo.CMD_REGISTRO_MONITOR);
             System.out.println("Monitor: Conectado exitosamente.");
-
-            
-            if (listener != null) {
-                listener.alRecibirNuevoLlamado(new LinkedList<>(historialAtendidos));
-            }
 
             String mensajeDelServidor;
             
             while ((mensajeDelServidor = in.readLine()) != null) {
-                if (mensajeDelServidor.startsWith(Protocolo.MSG_ACTUALIZAR_MONITOR)) {
+                if (mensajeDelServidor.startsWith(Protocolo.MSG_SYNC_MONITOR)) {
                     String[] partes = mensajeDelServidor.split(Protocolo.SEPARADOR);
-                    String dni = SeguridadFacade.descifrarDni( partes[1]);
-                    String puesto = partes[2];
-                    procesarEntrada(dni, puesto);
+                    LinkedList<String> listaParaPantalla = new LinkedList<>();
+                    
+                    // Si solo llegó el comando, significa que la lista en el servidor está vacía
+                    if (partes.length == 1) {
+                        listaParaPantalla.add("Esperando turnos...");
+                    } else {
+                        // Leemos de a pares: DNI_CIFRADO y PUESTO
+                        for (int i = 1; i < partes.length; i += 2) {
+                            String dniCifrado = partes[i];
+                            String nroPuesto = partes[i+1];
+                            
+                            String dniDescifrado = SeguridadFacade.descifrarDni(dniCifrado);
+                            listaParaPantalla.add(dniDescifrado + "  -   " + nroPuesto);
+                        }
+                    }
+                    
+                    // Mandamos la lista a la ventana para que la dibuje
+                    if (listener != null) {
+                        listener.alRecibirNuevoLlamado(listaParaPantalla);
+                    }
                 }
             }
             
             throw new Exception("El servidor cerró el flujo de datos de manera abrupta.");
-        }
-    }
-
-    private void procesarEntrada(String dni, String puesto) {
-        String turnoFormateado = dni + "  -  " + puesto;
-        historialAtendidos.removeIf(elementoViejo -> elementoViejo.contains(dni));
-        historialAtendidos.addFirst(turnoFormateado);
-        
-        if (historialAtendidos.size() > MAX_HISTORIAL) {
-            historialAtendidos.removeLast();
-        }
-        if (listener != null) {
-            listener.alRecibirNuevoLlamado(new LinkedList<>(historialAtendidos));
         }
     }
 }

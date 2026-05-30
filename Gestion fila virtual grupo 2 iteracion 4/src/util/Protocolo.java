@@ -29,6 +29,8 @@ public class Protocolo {
 	public static final String OK_DESCONECTAR = "OK:PUESTO_DESCONECTADO";
 	public static final String CMD_PEDIR_ESTADO = "PEDIR_ESTADO";
     public static final String SEP_ESTADO = "@@";
+    
+    public static final String MSG_SYNC_MONITOR = "SYNC_MONITOR";
 	
 	
 }

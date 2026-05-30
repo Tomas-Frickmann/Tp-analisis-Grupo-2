@@ -71,14 +71,17 @@ public class ServidorMain {
         heartbeatThread.setDaemon(true);
         heartbeatThread.start();
 
-        
+        ServidorLogic logica = new ServidorLogic(config, esRespaldo, miPuerto);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\n[SISTEMA] Cerrando servidor...");
             GestorJson.marcarInactivo(miIp, miPuerto); 
+            if (!ServidorMain.isEsRespaldo()) {
+                logica.guardarEstadoEnDisco(); 
+           }
         }));
 
         
-        ServidorLogic logica = new ServidorLogic(config, esRespaldo, miPuerto);
+        
         logica.iniciarServidor();
     }
 

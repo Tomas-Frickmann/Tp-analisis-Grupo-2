@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.*;
 import util.*;
 import seguridad.SeguridadFacade; 
+import persistencia.*;
 public class ServidorLogic {
     private ConfigServidor config;
     private volatile boolean esRespaldo;
@@ -15,6 +16,8 @@ public class ServidorLogic {
     private LinkedList<Puesto> listaPuestosRegistrados = new LinkedList<>();
     private LinkedList<Cliente> colaClientesEnEspera = new LinkedList<>();
     private LinkedList<PrintWriter> monitoresConectados = new LinkedList<>();
+    private LinkedList<String> ultimosLlamados = new LinkedList<>();
+    private final int MAX_LLAMADOS_PANTALLA = 5;
 
     public ServidorLogic(ConfigServidor config, boolean esRespaldo, int puertoAsignado) {
         this.config = config;
@@ -43,6 +46,8 @@ public class ServidorLogic {
         if (esRespaldo) {
             descargarEstadoInicial();
             iniciarVigilancia();
+        }else {
+        	cargarEstadoDesdeDisco();
         }
         System.out.println(">>> " + nombreServidor + " LISTO <<<");
     }
@@ -91,6 +96,12 @@ public class ServidorLogic {
                 synchronized(monitoresConectados) { 
                     monitoresConectados.add(out); 
                 }
+                StringBuilder sb = new StringBuilder(Protocolo.MSG_SYNC_MONITOR);
+                for (String llamado : ultimosLlamados) {
+                    sb.append(Protocolo.SEPARADOR).append(llamado);
+                }
+                out.println(sb.toString());
+                
                 while (s.isConnected() && !out.checkError()) { 
                     Thread.sleep(1000); 
                 }
@@ -328,14 +339,32 @@ public class ServidorLogic {
         }
     }
     private void actualizarPantallas(String dni, String numPuesto) {
-    	String dniOculto = SeguridadFacade.cifrarDni(dni);
-        String mensaje = Protocolo.MSG_ACTUALIZAR_MONITOR + Protocolo.SEPARADOR + dniOculto + Protocolo.SEPARADOR + "Puesto " + numPuesto;
+        String dniCifrado = SeguridadFacade.cifrarDni(dni);
+        String infoLlamado = dniCifrado + Protocolo.SEPARADOR + "Puesto " + numPuesto;
         
+        // Eliminamos duplicados por si vuelven a llamar al mismo
+        ultimosLlamados.removeIf(llamado -> llamado.startsWith(dniCifrado));
+        
+        // Lo ponemos primero
+        ultimosLlamados.addFirst(infoLlamado);
+        
+        if (ultimosLlamados.size() > MAX_LLAMADOS_PANTALLA) {
+            ultimosLlamados.removeLast();
+        }
+        
+        // Armamos el mensaje: SYNC_MONITOR;dniCifrado1;Puesto1;dniCifrado2;Puesto2...
+        StringBuilder sb = new StringBuilder(Protocolo.MSG_SYNC_MONITOR);
+        for (String llamado : ultimosLlamados) {
+            sb.append(Protocolo.SEPARADOR).append(llamado);
+        }
+        String mensajeFinal = sb.toString();
+        
+        // Se lo mandamos a todos los monitores vivos
         synchronized(monitoresConectados) {
             Iterator<PrintWriter> iteradorMonitores = monitoresConectados.iterator();
             while (iteradorMonitores.hasNext()) { 
                 try { 
-                    iteradorMonitores.next().println(mensaje); 
+                    iteradorMonitores.next().println(mensajeFinal); 
                 } catch (Exception e) { 
                     iteradorMonitores.remove(); 
                 } 
@@ -399,5 +428,49 @@ public class ServidorLogic {
                 }
             }
         }).start();
+    }
+    public void guardarEstadoEnDisco() {
+        List<ClienteDTO> clientesDTO = new ArrayList<>();
+        for (Cliente c : this.colaClientesEnEspera) {
+            clientesDTO.add(new ClienteDTO(c.getDni()));
+        }
+
+        List<PuestoDTO> puestosDTO = new ArrayList<>();
+        for (Puesto p : this.listaPuestosRegistrados) {
+            puestosDTO.add(new PuestoDTO(p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo()));
+        }
+
+        DAOFactory fabrica = FabricaProductor.obtenerFabrica(config.getFormatoPersistencia());
+        String archivoBase = config.getArchivoPersistencia();
+
+        fabrica.crearClienteDAO().guardarCola(clientesDTO, archivoBase);
+        fabrica.crearPuestoDAO().guardarPuestos(puestosDTO, archivoBase);
+        fabrica.crearPantallaDAO().guardarPantalla(this.ultimosLlamados, archivoBase);
+        
+        System.out.println("[Persistencia] Estado guardado exitosamente.");
+    }
+
+    public void cargarEstadoDesdeDisco() {
+        DAOFactory fabrica = FabricaProductor.obtenerFabrica(config.getFormatoPersistencia());
+        String archivoBase = config.getArchivoPersistencia();
+
+        List<ClienteDTO> cli = fabrica.crearClienteDAO().leerCola(archivoBase);
+        if (cli != null) {
+            this.colaClientesEnEspera.clear();
+            for (ClienteDTO c : cli) this.colaClientesEnEspera.addLast(new Cliente(c.getDni()));
+        }
+
+        List<PuestoDTO> pue = fabrica.crearPuestoDAO().leerPuestos(archivoBase);
+        if (pue != null) {
+            this.listaPuestosRegistrados.clear();
+            for (PuestoDTO p : pue) {
+                this.listaPuestosRegistrados.add(new Puesto(p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo()));
+            }
+        }
+
+        List<String> pan = fabrica.crearPantallaDAO().leerPantalla(archivoBase);
+        if (pan != null) this.ultimosLlamados = new LinkedList<>(pan);
+
+        System.out.println("[Persistencia] Estado cargado desde el disco.");
     }
 }

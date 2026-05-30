@@ -13,6 +13,8 @@ public class ConfigServidor {
     private int maxIntentosFallidos;
     private String algoritmoCifrado;
     private String claveSecreta;
+    private String formatoPersistencia;
+    private String archivoPersistencia;
 
     public ConfigServidor(String rutaArchivo) {
         Properties prop = new Properties();
@@ -32,6 +34,9 @@ public class ConfigServidor {
            
             this.algoritmoCifrado = prop.getProperty("seguridad.algoritmo", "XOR");
             this.claveSecreta = prop.getProperty("seguridad.clave", "SistemadeGestionAyDS2");
+            
+            this.formatoPersistencia = prop.getProperty("persistencia.formato", "JSON");
+            this.archivoPersistencia = prop.getProperty("persistencia.archivo", "historial_filas");
 
         } catch (IOException | NumberFormatException e) {
             System.err.println("No se encontró el archivo .properties o hay un error de formato. Usando valores por defecto.");
@@ -80,5 +85,11 @@ public class ConfigServidor {
     }
     public void setPuertoPrincipal(int puerto) {
         this.puertoPrincipal = puerto;
+    }
+    public String getFormatoPersistencia() {
+    	return formatoPersistencia;
+    }
+    public String getArchivoPersistencia(){
+    	return archivoPersistencia;
     }
 }
