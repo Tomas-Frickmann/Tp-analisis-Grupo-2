@@ -107,39 +107,25 @@ public class MonitorVentana extends JFrame implements IVentana {
         JOptionPane.showMessageDialog(this, mensaje, titulo, tipo);
     }
 
+ // En MonitorVentana.java -> actualizarMonitor
     public void actualizarMonitor(LinkedList<String> historial) {
-        if (historial == null || historial.isEmpty()) return;
+        if (historial == null) return;
         
         SwingUtilities.invokeLater(() -> {
+            if (historial.isEmpty() || historial.getFirst().contains("Esperando") || historial.getFirst().contains("RECONECTANDO")) {
+                lblActual.setText("Esperando turnos...");
+                modeloHistorial.clear();
+                return;
+            }
             String actual = historial.getFirst();
-            
-            
-            boolean esMensajeSistema = actual.equals("Esperando turnos...") || actual.equals(" RECONECTANDO...");
-
-            if (!esMensajeSistema) {
-                
-                String textoGigante = "<html><div style='text-align: center;'>" + actual.replace(" - ", "<br>") + "</div></html>";
-                lblActual.setText(textoGigante);  
-                iniciarParpadeo();
-                reproducirSonido();
-            } else {
-                
-                lblActual.setText(actual);
-                
-                lblActual.setForeground(Color.WHITE); 
-            }
-            
-            
+            String textoGigante = "<html><div style='text-align: center;'>" + actual.replace(" - ", "<br>") + "</div></html>";
+            lblActual.setText(textoGigante);
+            iniciarParpadeo(); 
+            reproducirSonido(); 
             modeloHistorial.clear();
-            Iterator<String> it = historial.iterator();
             
-            if (it.hasNext()) {
-                it.next(); 
-            }
-
-            while (it.hasNext()) {
-                String s = it.next();
-                this.modeloHistorial.addElement("  " + s);
+            for (int i = 1; i < historial.size(); i++) {
+                modeloHistorial.addElement("  " + historial.get(i));
             }
             
             this.repaint();

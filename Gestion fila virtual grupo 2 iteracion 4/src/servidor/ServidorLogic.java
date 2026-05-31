@@ -119,10 +119,16 @@ public class ServidorLogic {
         
         if (esRespaldo && comando.startsWith("CLON_")) {
             switch (comando) {
+	            case "CLON_PANTALLA":
+	                String infoLlamado = partes[1] + Protocolo.SEPARADOR + partes[2];
+	                ultimosLlamados.addLast(infoLlamado); 
+	                guardarEstadoEnDisco();
+	                break;
                 case "CLON_CLIENTE": 
                     
                     String dniDescifrado = SeguridadFacade.descifrarDni(partes[1]);
                     colaClientesEnEspera.addLast(new Cliente(dniDescifrado)); 
+                    guardarEstadoEnDisco();
                     break;
                     
                 case "CLON_PUESTO": 
@@ -139,6 +145,7 @@ public class ServidorLogic {
                     
                     int reintentos = Integer.parseInt(partes[6]);               
                     listaPuestosRegistrados.add(new Puesto(ip, puerto, dniPuesto, reintentos, nroPuesto, activo));
+                    guardarEstadoEnDisco();
                     break;
                     
                 case "CLON_ACTIVA_PUESTO": 
@@ -146,6 +153,7 @@ public class ServidorLogic {
                     if (puestoActivar != null) {
                         puestoActivar.setActivo(true);
                     }
+                    guardarEstadoEnDisco();
                     break;
                     
                 case "CLON_LLAMAR":
@@ -154,13 +162,16 @@ public class ServidorLogic {
                     if (puestoLlamador != null && clienteLlamado != null) {
                         System.out.println("Puesto " + puestoLlamador.getNroPuesto() + " asignado al cliente " + clienteLlamado.getDni() + " (replicado)");
                         puestoLlamador.asignarClienteAlPuesto(clienteLlamado);
+                        actualizarPantallas(clienteLlamado.getDni(), partes[1]);
                     }
+                    guardarEstadoEnDisco();
                     break;
                     
                 case "CLON_DESCONECTAR":
                     Puesto puestoDesconectar = buscarPuestoPorId(partes[1]); 
                     if (puestoDesconectar != null) {
                         puestoDesconectar.setActivo(false);
+                        guardarEstadoEnDisco();
                     }
                     break;
                     
@@ -168,7 +179,9 @@ public class ServidorLogic {
                     Puesto p = buscarPuestoPorId(partes[1]); 
                     if (p != null && p.getReintentos() > 0) {
                         p.disminuirReintento();
+                        actualizarPantallas(p.getDni(), partes[1]);
                         System.out.println(p.getNroPuesto() + " tiene " + p.getReintentos() + " reintentos antes de perder al cliente. soy respaldo");
+                        guardarEstadoEnDisco();
                     }
                     break;
             }
@@ -186,6 +199,7 @@ public class ServidorLogic {
                 Puesto puestoDesconectar = buscarPuestoPorId(partes[1]);
                 if (puestoDesconectar != null) {
                     puestoDesconectar.setActivo(false);
+                    guardarEstadoEnDisco();
                     replicarEnRespaldo("CLON_DESCONECTAR" + Protocolo.SEPARADOR + partes[1]);
                     return Protocolo.OK_DESCONECTAR;
                 }
@@ -200,12 +214,14 @@ public class ServidorLogic {
                     puestoExistente.setActivo(true); 
                     puestoExistente.setIp(partes[1]); 
                     puestoExistente.setPuerto(partes[3]);
+                    guardarEstadoEnDisco();
                     replicarEnRespaldo("CLON_ACTIVA_PUESTO" + Protocolo.SEPARADOR + partes[2]);
                     return Protocolo.OK_REGISTRADO;
                 }
                 listaPuestosRegistrados.add(new Puesto(partes[1], partes[3], partes[2], true));
                 String cadena = ("CLON_PUESTO" + Protocolo.SEPARADOR + partes[1] + Protocolo.SEPARADOR + partes[3] +
                                  Protocolo.SEPARADOR + partes[2] + Protocolo.SEPARADOR + "1" + Protocolo.SEPARADOR + "VACIO" + Protocolo.SEPARADOR + "0");
+                guardarEstadoEnDisco();
                 replicarEnRespaldo(cadena);
                 return Protocolo.OK_REGISTRADO;
                 
@@ -216,6 +232,7 @@ public class ServidorLogic {
                 if (puestoAsignar != null && clienteEnCola != null) {
                     puestoAsignar.asignarClienteAlPuesto(clienteEnCola); 
                     actualizarPantallas(clienteEnCola.getDni(), partes[1]);
+                    guardarEstadoEnDisco();
                     replicarEnRespaldo("CLON_LLAMAR" + Protocolo.SEPARADOR + partes[1]);
                     
                     
@@ -226,16 +243,12 @@ public class ServidorLogic {
                 
             case Protocolo.CMD_PEDIR_ESTADO:
                 StringBuilder estadoComprimido = new StringBuilder();
-                
-                
                 for (Puesto pu : listaPuestosRegistrados) {
                     String dniDelPuesto = pu.getDni();
-                    
                     
                     if (!dniDelPuesto.equals("VACIO")) {
                         dniDelPuesto = SeguridadFacade.cifrarDni(dniDelPuesto);
                     }
-                    
                     estadoComprimido.append("CLON_PUESTO").append(Protocolo.SEPARADOR)
                                     .append(pu.getIp()).append(Protocolo.SEPARADOR)
                                     .append(pu.getPuerto()).append(Protocolo.SEPARADOR)
@@ -244,22 +257,21 @@ public class ServidorLogic {
                                     .append(dniDelPuesto).append(Protocolo.SEPARADOR)
                                     .append(pu.getReintentos()).append(Protocolo.SEP_ESTADO);
                 }
-                
-                
                 for (Cliente cu : colaClientesEnEspera) {
-                    
                     String dniClienteFila = SeguridadFacade.cifrarDni(cu.getDni());
                     
                     estadoComprimido.append("CLON_CLIENTE").append(Protocolo.SEPARADOR)
                                     .append(dniClienteFila).append(Protocolo.SEP_ESTADO);
                 }
-                
+                for (String llamado : ultimosLlamados) {
+                    estadoComprimido.append("CLON_PANTALLA").append(Protocolo.SEPARADOR)
+                                    .append(llamado).append(Protocolo.SEP_ESTADO);
+                }
                 if (estadoComprimido.length() > 0) {
                     return estadoComprimido.toString();
                 } else {
                     return "VACIO";
                 }
-                
             case Protocolo.CMD_NUEVO_CLIENTE:
                 
                 String dniNuevoLimpio = SeguridadFacade.descifrarDni(partes[1]);
@@ -278,7 +290,7 @@ public class ServidorLogic {
     
     public synchronized void anadirCliente(String dni) {
         colaClientesEnEspera.addLast(new Cliente(dni));
-        
+        guardarEstadoEnDisco();
         String dniCifrado = SeguridadFacade.cifrarDni(dni);
         replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + dniCifrado);
         System.out.println("Servidor: Cliente " + dni + " añadido a la fila normal.");
@@ -299,6 +311,7 @@ public class ServidorLogic {
         if (p.getReintentos() > 0) {
             p.disminuirReintento();
             actualizarPantallas(p.getDni(), nroPuesto);
+            guardarEstadoEnDisco();
             replicarEnRespaldo("CLON_RELLAMAR" + Protocolo.SEPARADOR + nroPuesto);
             return Protocolo.OK_RELLAMADO;
         } else {
@@ -405,6 +418,7 @@ public class ServidorLogic {
                                 ServidorMain.setEsRespaldo(false);
                                 GestorJson.registrarOActualizar(ip, puertoServidor, true, true);
                                 actualizarIdentidad();
+                                guardarEstadoEnDisco();
                                 System.out.println("! >>> ME HE CONVERTIDO EN EL NUEVO PRINCIPAL <<<");
                                 System.out.println(colaClientesEnEspera);
                                 System.out.println(listaPuestosRegistrados);
@@ -429,6 +443,9 @@ public class ServidorLogic {
             }
         }).start();
     }
+    private String obtenerNombreArchivoPersistencia() {
+        return config.getArchivoPersistencia() + "_" + puertoServidor;
+    }
     public void guardarEstadoEnDisco() {
         List<ClienteDTO> clientesDTO = new ArrayList<>();
         for (Cliente c : this.colaClientesEnEspera) {
@@ -441,7 +458,7 @@ public class ServidorLogic {
         }
 
         DAOFactory fabrica = FabricaProductor.obtenerFabrica(config.getFormatoPersistencia());
-        String archivoBase = config.getArchivoPersistencia();
+        String archivoBase = obtenerNombreArchivoPersistencia();
 
         fabrica.crearClienteDAO().guardarCola(clientesDTO, archivoBase);
         fabrica.crearPuestoDAO().guardarPuestos(puestosDTO, archivoBase);
@@ -452,7 +469,7 @@ public class ServidorLogic {
 
     public void cargarEstadoDesdeDisco() {
         DAOFactory fabrica = FabricaProductor.obtenerFabrica(config.getFormatoPersistencia());
-        String archivoBase = config.getArchivoPersistencia();
+        String archivoBase = obtenerNombreArchivoPersistencia();
 
         List<ClienteDTO> cli = fabrica.crearClienteDAO().leerCola(archivoBase);
         if (cli != null) {
