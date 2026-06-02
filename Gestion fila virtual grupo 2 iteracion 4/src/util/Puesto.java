@@ -1,4 +1,4 @@
-package servidor;
+package util;
 
 public class Puesto {
 	private String ip;

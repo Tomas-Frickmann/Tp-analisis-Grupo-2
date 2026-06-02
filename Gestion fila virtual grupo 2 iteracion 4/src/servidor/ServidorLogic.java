@@ -1,13 +1,31 @@
 package servidor;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import util.*;
-import seguridad.SeguridadFacade; 
-import persistencia.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import factory.IFabricaEntidades;
+import persistencia.ClienteDTO;
+import persistencia.DAOFactory;
+import persistencia.FabricaProductor;
+import persistencia.PuestoDTO;
+import seguridad.SeguridadFacade;
+import util.Cliente;
+import util.ConfigServidor;
+import util.GestorJson;
+import util.Protocolo;
+import util.Puesto;
+
 public class ServidorLogic {
     private ConfigServidor config;
+    private IFabricaEntidades fabrica;
     private volatile boolean esRespaldo;
     private String nombreServidor;
     private final int puertoServidor;
@@ -23,6 +41,7 @@ public class ServidorLogic {
         this.config = config;
         this.esRespaldo = esRespaldo;
         this.puertoServidor = puertoAsignado;
+        this.fabrica = new factory.FabricaEntidadesConcreta();
         
         if (puertoAsignado == config.getPuertoPrincipal()) {
             this.ip = config.getIpPrincipal();
@@ -127,7 +146,7 @@ public class ServidorLogic {
                 case "CLON_CLIENTE": 
                     
                     String dniDescifrado = SeguridadFacade.descifrarDni(partes[1]);
-                    colaClientesEnEspera.addLast(new Cliente(dniDescifrado)); 
+                    colaClientesEnEspera.addLast(fabrica.crearCliente(dniDescifrado));
                     guardarEstadoEnDisco();
                     break;
                     
@@ -144,7 +163,7 @@ public class ServidorLogic {
                     }
                     
                     int reintentos = Integer.parseInt(partes[6]);               
-                    listaPuestosRegistrados.add(new Puesto(ip, puerto, dniPuesto, reintentos, nroPuesto, activo));
+                    listaPuestosRegistrados.add(fabrica.crearPuestoClonado(ip, puerto, dniPuesto, reintentos, nroPuesto, activo));
                     guardarEstadoEnDisco();
                     break;
                     
@@ -218,7 +237,7 @@ public class ServidorLogic {
                     replicarEnRespaldo("CLON_ACTIVA_PUESTO" + Protocolo.SEPARADOR + partes[2]);
                     return Protocolo.OK_REGISTRADO;
                 }
-                listaPuestosRegistrados.add(new Puesto(partes[1], partes[3], partes[2], true));
+                listaPuestosRegistrados.add(fabrica.crearPuesto(partes[1], partes[3], partes[2], true));
                 String cadena = ("CLON_PUESTO" + Protocolo.SEPARADOR + partes[1] + Protocolo.SEPARADOR + partes[3] +
                                  Protocolo.SEPARADOR + partes[2] + Protocolo.SEPARADOR + "1" + Protocolo.SEPARADOR + "VACIO" + Protocolo.SEPARADOR + "0");
                 guardarEstadoEnDisco();
@@ -289,7 +308,7 @@ public class ServidorLogic {
     }
     
     public synchronized void anadirCliente(String dni) {
-        colaClientesEnEspera.addLast(new Cliente(dni));
+        colaClientesEnEspera.addLast(fabrica.crearCliente(dni));
         guardarEstadoEnDisco();
         String dniCifrado = SeguridadFacade.cifrarDni(dni);
         replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + dniCifrado);
@@ -474,14 +493,16 @@ public class ServidorLogic {
         List<ClienteDTO> cli = fabrica.crearClienteDAO().leerCola(archivoBase);
         if (cli != null) {
             this.colaClientesEnEspera.clear();
-            for (ClienteDTO c : cli) this.colaClientesEnEspera.addLast(new Cliente(c.getDni()));
+            for (ClienteDTO c : cli) this.colaClientesEnEspera.addLast(this.fabrica.crearCliente(c.getDni()));
         }
 
         List<PuestoDTO> pue = fabrica.crearPuestoDAO().leerPuestos(archivoBase);
         if (pue != null) {
             this.listaPuestosRegistrados.clear();
             for (PuestoDTO p : pue) {
-                this.listaPuestosRegistrados.add(new Puesto(p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo()));
+            	this.listaPuestosRegistrados.add(this.fabrica.crearPuestoClonado(
+                        p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo()
+                    ));
             }
         }
 
