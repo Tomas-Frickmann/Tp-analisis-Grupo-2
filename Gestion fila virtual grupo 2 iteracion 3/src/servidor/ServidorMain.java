@@ -19,27 +19,25 @@ public class ServidorMain {
         ConfigServidor config = new ConfigServidor("config_servidores.properties");
         File lockFile = new File("eleccion_lider.lock");
 
-        // El FileLock asegura que si lanzas varios servidores a la vez, 
-        // entren al JSON de a uno por vez para decidir quién manda.
+        
         try (RandomAccessFile raf = new RandomAccessFile(lockFile, "rw");
              FileChannel channel = raf.getChannel();
              FileLock lock = channel.lock()) { 
 
             System.out.println("[SISTEMA] Iniciando secuencia de arranque...");
 
-            // 1. ELECCIÓN DE PUERTO FÍSICO
-            // Primero intentamos ocupar el puerto principal (5000)
+
             try (ServerSocket test = new ServerSocket(config.getPuertoPrincipal())) {
                 miPuerto = config.getPuertoPrincipal();
                 miIp = config.getIpPrincipal();
             } catch (IOException e) {
-                // Si el 5000 está ocupado, buscamos el siguiente disponible para respaldos
+               
                 miPuerto = buscarPuertoLibre(config.getPuertoRespaldo());
                 miIp = config.getIpRespaldo();
             }
 
-            // 2. ELECCIÓN DE ROL LÓGICO
-            // Revisamos el JSON. Si no hay nadie vivo mandando, tomamos el mando.
+            
+            
             String[] principalActual = GestorJson.obtenerPrincipalActivo();
 
             if (principalActual == null) {
