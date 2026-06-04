@@ -1,5 +1,3 @@
 [
-  { "ip":"26.38.110.213", "puerto":"6004", "dni":"555555555", "reintentos":2, "nroPuesto":4, "activo":true },
-  { "ip":"26.38.110.213", "puerto":"6001", "dni":"444444444", "reintentos":2, "nroPuesto":1, "activo":true },
-  { "ip":"26.38.110.213", "puerto":"6009", "dni":"null", "reintentos":0, "nroPuesto":9, "activo":true }
+  { "ip":"192.168.100.42", "puerto":"6001", "dni":"112221223", "reintentos":2, "nroPuesto":1, "activo":false, "ultimoContacto":1780604688234 }
 ]

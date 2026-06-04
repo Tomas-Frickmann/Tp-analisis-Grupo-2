@@ -318,8 +318,8 @@ public class ServidorLogic {
     public synchronized void anadirCliente(String dni) {
         colaClientesEnEspera.addLast(fabrica.crearCliente(dni));
         guardarEstadoEnDisco();
-        String dniCifrado = SeguridadFacade.cifrarDni(dni);
-        replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + dniCifrado);
+        //String dniCifrado = SeguridadFacade.cifrarDni(dni);
+        replicarEnRespaldo("CLON_CLIENTE" + Protocolo.SEPARADOR + dni);
         System.out.println("Servidor: Cliente " + dni + " añadido a la fila normal.");
     }
 
