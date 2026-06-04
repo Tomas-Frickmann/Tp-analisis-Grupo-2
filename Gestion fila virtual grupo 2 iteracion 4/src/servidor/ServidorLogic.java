@@ -67,6 +67,7 @@ public class ServidorLogic {
             iniciarVigilancia();
         }else {
         	cargarEstadoDesdeDisco();
+        	iniciarLimpiezaDePuestos();
         }
         System.out.println(">>> " + nombreServidor + " LISTO <<<");
     }
@@ -163,7 +164,7 @@ public class ServidorLogic {
                     }
                     
                     int reintentos = Integer.parseInt(partes[6]);               
-                    listaPuestosRegistrados.add(fabrica.crearPuestoClonado(ip, puerto, dniPuesto, reintentos, nroPuesto, activo));
+                    listaPuestosRegistrados.add(fabrica.crearPuestoClonado(ip, puerto, dniPuesto, reintentos, nroPuesto, activo, System.currentTimeMillis()));
                     guardarEstadoEnDisco();
                     break;
                     
@@ -233,6 +234,7 @@ public class ServidorLogic {
                     puestoExistente.setActivo(true); 
                     puestoExistente.setIp(partes[1]); 
                     puestoExistente.setPuerto(partes[3]);
+                    puestoExistente.actualizarContacto();
                     guardarEstadoEnDisco();
                     replicarEnRespaldo("CLON_ACTIVA_PUESTO" + Protocolo.SEPARADOR + partes[2]);
                     return Protocolo.OK_REGISTRADO;
@@ -246,6 +248,8 @@ public class ServidorLogic {
                 
             case Protocolo.CMD_LLAMAR:
                 Puesto puestoAsignar = buscarPuestoPorId(partes[1]);
+                if (puestoAsignar != null)
+                	puestoAsignar.actualizarContacto();
                 Cliente clienteEnCola = colaClientesEnEspera.poll();
                 
                 if (puestoAsignar != null && clienteEnCola != null) {
@@ -300,7 +304,11 @@ public class ServidorLogic {
                 return String.valueOf(colaClientesEnEspera.size());
                 
             case Protocolo.CMD_RELLAMAR:
-                 return this.Rellamar(partes[1]);
+            	Puesto pRellamar = buscarPuestoPorId(partes[1]);
+                if (pRellamar != null)
+                	pRellamar.actualizarContacto(); // <-- ACÁ
+                return this.Rellamar(partes[1]);
+ 
                  
             default: 
                 return Protocolo.ERR_COMANDO;
@@ -373,25 +381,17 @@ public class ServidorLogic {
     private void actualizarPantallas(String dni, String numPuesto) {
         String dniCifrado = SeguridadFacade.cifrarDni(dni);
         String infoLlamado = dniCifrado + Protocolo.SEPARADOR + "Puesto " + numPuesto;
-        
-        // Eliminamos duplicados por si vuelven a llamar al mismo
         ultimosLlamados.removeIf(llamado -> llamado.startsWith(dniCifrado));
-        
-        // Lo ponemos primero
         ultimosLlamados.addFirst(infoLlamado);
         
         if (ultimosLlamados.size() > MAX_LLAMADOS_PANTALLA) {
             ultimosLlamados.removeLast();
         }
-        
-        // Armamos el mensaje: SYNC_MONITOR;dniCifrado1;Puesto1;dniCifrado2;Puesto2...
         StringBuilder sb = new StringBuilder(Protocolo.MSG_SYNC_MONITOR);
         for (String llamado : ultimosLlamados) {
             sb.append(Protocolo.SEPARADOR).append(llamado);
         }
         String mensajeFinal = sb.toString();
-        
-        // Se lo mandamos a todos los monitores vivos
         synchronized(monitoresConectados) {
             Iterator<PrintWriter> iteradorMonitores = monitoresConectados.iterator();
             while (iteradorMonitores.hasNext()) { 
@@ -438,6 +438,7 @@ public class ServidorLogic {
                                 GestorJson.registrarOActualizar(ip, puertoServidor, true, true);
                                 actualizarIdentidad();
                                 guardarEstadoEnDisco();
+                                iniciarLimpiezaDePuestos();
                                 System.out.println("! >>> ME HE CONVERTIDO EN EL NUEVO PRINCIPAL <<<");
                                 System.out.println(colaClientesEnEspera);
                                 System.out.println(listaPuestosRegistrados);
@@ -453,6 +454,7 @@ public class ServidorLogic {
                             ServidorMain.setEsRespaldo(false);
                             GestorJson.registrarOActualizar(ip, puertoServidor, true, true);
                             actualizarIdentidad();
+                            iniciarLimpiezaDePuestos();
                             break;
                         }
                     }
@@ -473,7 +475,7 @@ public class ServidorLogic {
 
         List<PuestoDTO> puestosDTO = new ArrayList<>();
         for (Puesto p : this.listaPuestosRegistrados) {
-            puestosDTO.add(new PuestoDTO(p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo()));
+        	puestosDTO.add(new PuestoDTO(p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo(), p.getUltimoContacto()));
         }
 
         DAOFactory fabrica = FabricaProductor.obtenerFabrica(config.getFormatoPersistencia());
@@ -499,9 +501,22 @@ public class ServidorLogic {
         List<PuestoDTO> pue = fabrica.crearPuestoDAO().leerPuestos(archivoBase);
         if (pue != null) {
             this.listaPuestosRegistrados.clear();
+            long tiempoActual = System.currentTimeMillis();
+
             for (PuestoDTO p : pue) {
-            	this.listaPuestosRegistrados.add(this.fabrica.crearPuestoClonado(
-                        p.getIp(), p.getPuerto(), p.getDni(), p.getReintentos(), p.getNroPuesto(), p.isActivo()
+                boolean estaActivo = p.isActivo();
+                
+                if (estaActivo && (tiempoActual - p.getUltimoContacto()) > 30000) {
+                    estaActivo = false;
+                }
+                this.listaPuestosRegistrados.add(this.fabrica.crearPuestoClonado(
+                        p.getIp(), 
+                        p.getPuerto(), 
+                        p.getDni(), 
+                        p.getReintentos(), 
+                        p.getNroPuesto(), 
+                        estaActivo,
+                        p.getUltimoContacto()
                     ));
             }
         }
@@ -510,5 +525,26 @@ public class ServidorLogic {
         if (pan != null) this.ultimosLlamados = new LinkedList<>(pan);
 
         System.out.println("[Persistencia] Estado cargado desde el disco.");
+    }
+    private void iniciarLimpiezaDePuestos() {
+        new Thread(() -> {
+            while (!esRespaldo) { // Solo el principal limpia
+                try {
+                    Thread.sleep(10000); 
+                    long tiempoActual = System.currentTimeMillis();
+                    boolean huboCambios = false;
+
+                    for (Puesto p : listaPuestosRegistrados) {
+                        if (p.isActivo() && (tiempoActual - p.getUltimoContacto()) > 30000) {
+                            p.setActivo(false);
+                            huboCambios = true;
+                            System.out.println("[INFO] Puesto " + p.getNroPuesto() + " apagado por inactividad (Timeout).");
+                            replicarEnRespaldo("CLON_DESCONECTAR" + Protocolo.SEPARADOR + p.getNroPuesto());
+                        }
+                    }
+                    if (huboCambios) guardarEstadoEnDisco();
+                } catch (Exception e) { break; }
+            }
+        }).start();
     }
 }

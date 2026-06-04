@@ -2,8 +2,6 @@ package persistencia;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import persistencia.PuestoDTO;
-import persistencia.PuestoDAO;
 
 public class XmlPuestoDAO implements PuestoDAO {
     @Override
@@ -19,6 +17,7 @@ public class XmlPuestoDAO implements PuestoDAO {
                 pw.println("    <reintentos>" + p.getReintentos() + "</reintentos>");
                 pw.println("    <nroPuesto>" + p.getNroPuesto() + "</nroPuesto>");
                 pw.println("    <activo>" + p.isActivo() + "</activo>");
+                pw.println("    <ultimoContacto>" + p.getUltimoContacto() + "</ultimoContacto>");
                 pw.println("  </puesto>");
             }
             pw.println("</puestos>");
@@ -36,6 +35,7 @@ public class XmlPuestoDAO implements PuestoDAO {
             String ip = "", puerto = "", dni = "";
             int reintentos = 0, nroPuesto = 0;
             boolean activo = false;
+            long ultimoContacto = System.currentTimeMillis();
 
             while ((linea = br.readLine()) != null) {
                 if (linea.contains("<ip>")) ip = linea.replace("<ip>", "").replace("</ip>", "").trim();
@@ -44,8 +44,9 @@ public class XmlPuestoDAO implements PuestoDAO {
                 else if (linea.contains("<reintentos>")) reintentos = Integer.parseInt(linea.replace("<reintentos>", "").replace("</reintentos>", "").trim());
                 else if (linea.contains("<nroPuesto>")) nroPuesto = Integer.parseInt(linea.replace("<nroPuesto>", "").replace("</nroPuesto>", "").trim());
                 else if (linea.contains("<activo>")) activo = Boolean.parseBoolean(linea.replace("<activo>", "").replace("</activo>", "").trim());
+                else if (linea.contains("<ultimoContacto>")) ultimoContacto = Long.parseLong(linea.replace("<ultimoContacto>", "").replace("</ultimoContacto>", "").trim());
                 else if (linea.contains("</puesto>")) {
-                    lista.add(new PuestoDTO(ip, puerto, dni, reintentos, nroPuesto, activo));
+                    lista.add(new PuestoDTO(ip, puerto, dni, reintentos, nroPuesto, activo, ultimoContacto));
                 }
             }
         } catch (Exception e) { e.printStackTrace(); }

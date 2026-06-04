@@ -7,7 +7,7 @@ public class Puesto {
 	private int reintentos;
 	private int nroPuesto;
 	private boolean activo;
-	
+	private long ultimoContacto;
 	
 	
 	public Puesto(String ip, String puerto,String nroPuesto, boolean activo) {
@@ -15,11 +15,11 @@ public class Puesto {
 		this.puerto=puerto;
 		this.nroPuesto= Integer.parseInt(nroPuesto);
 		this.activo=activo;
-	
+		this.ultimoContacto = System.currentTimeMillis();
 	
 	}
 	
-	public Puesto(String ip, String puerto, String dni, int reintentos, int nroPuesto, boolean activo) {
+	public Puesto(String ip, String puerto, String dni, int reintentos, int nroPuesto, boolean activo, long ultimoContacto) {
 		super();
 		this.ip = ip;
 		this.puerto = puerto;
@@ -27,6 +27,7 @@ public class Puesto {
 		this.reintentos = reintentos;
 		this.nroPuesto = nroPuesto;
 		this.activo = activo;
+		this.ultimoContacto = ultimoContacto;
 	}
 
 	public String getIp() {
@@ -69,6 +70,8 @@ public class Puesto {
 	public void setActivo(boolean activo) {
 		this.activo = activo;
 	}
-	
+	public long getUltimoContacto() { return ultimoContacto; }
+	public void setUltimoContacto(long ultimoContacto) { this.ultimoContacto = ultimoContacto; }
+	public void actualizarContacto() { this.ultimoContacto = System.currentTimeMillis(); } 
 	
 }
