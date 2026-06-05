@@ -8,7 +8,7 @@ public class SeguridadFacade {
     private static final EstrategiaCifrado xorInstance = new CifradoXOR();
     private static final EstrategiaCifrado vigenereInstance = new CifradoVigenere();
 
-    
+    //esto hay que modificar para mas estrategias
     private static EstrategiaCifrado obtenerEstrategia(String algoritmo) {
         if ("VIGENERE".equalsIgnoreCase(algoritmo)) {
             return vigenereInstance;
@@ -24,7 +24,6 @@ public class SeguridadFacade {
 
         EstrategiaCifrado estrategia = obtenerEstrategia(algoritmo);
         
-     // 👉 PRINT DE PRUEBA: Muestra qué entró y qué salió
         String resultado = estrategia.encriptar(dni, clave);
         System.out.println("[SEGURIDAD - CIFRANDO] Original: " + dni + " -> Red: " + resultado + " (Usando: " + algoritmo + ")");
         return estrategia.encriptar(dni, clave);
@@ -39,7 +38,7 @@ public class SeguridadFacade {
         
         EstrategiaCifrado estrategia = obtenerEstrategia(algoritmo);
         
-     // 👉 PRINT DE PRUEBA: Muestra cómo se recupera el dato
+        
        String resultado = estrategia.desencriptar(dniCifrado, clave);
         System.out.println("[SEGURIDAD - DESCIFRANDO] Red: " + dniCifrado + " -> Recuperado: " + resultado + " (Usando: " + algoritmo + ")");
         
