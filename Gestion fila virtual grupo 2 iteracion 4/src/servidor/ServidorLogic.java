@@ -379,9 +379,9 @@ public class ServidorLogic {
         }
     }
     private void actualizarPantallas(String dni, String numPuesto) {
-        String dniCifrado = SeguridadFacade.cifrarDni(dni);
-        String infoLlamado = dniCifrado + Protocolo.SEPARADOR + "Puesto " + numPuesto;
-        ultimosLlamados.removeIf(llamado -> llamado.startsWith(dniCifrado));
+        //String dniCifrado = SeguridadFacade.cifrarDni(dni);
+        String infoLlamado = dni + Protocolo.SEPARADOR + "Puesto " + numPuesto;
+        ultimosLlamados.removeIf(llamado -> llamado.startsWith(dni));
         ultimosLlamados.addFirst(infoLlamado);
         
         if (ultimosLlamados.size() > MAX_LLAMADOS_PANTALLA) {
@@ -528,7 +528,7 @@ public class ServidorLogic {
     }
     private void iniciarLimpiezaDePuestos() {
         new Thread(() -> {
-            while (!esRespaldo) { // Solo el principal limpia
+            while (!esRespaldo) { 
                 try {
                     Thread.sleep(10000); 
                     long tiempoActual = System.currentTimeMillis();

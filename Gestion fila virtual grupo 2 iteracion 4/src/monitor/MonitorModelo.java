@@ -18,9 +18,7 @@ public class MonitorModelo {
     private String ipLiderActual = null;
     private int puertoLiderActual = -1;
     
-    public MonitorModelo() {
-
-    }
+    public MonitorModelo() {}
 
     public void setListener(IMonitorListener listener) {
         this.listener = listener;
@@ -66,7 +64,6 @@ public class MonitorModelo {
         if (listener != null) {
             LinkedList<String> alertaPantalla = new LinkedList<>();
             alertaPantalla.add(" RECONECTANDO...");
-            // Como ya no hay memoria local, solo mostramos el cartel de reconexión
             listener.alRecibirNuevoLlamado(alertaPantalla);
         }
     }
@@ -85,12 +82,9 @@ public class MonitorModelo {
                 if (mensajeDelServidor.startsWith(Protocolo.MSG_SYNC_MONITOR)) {
                     String[] partes = mensajeDelServidor.split(Protocolo.SEPARADOR);
                     LinkedList<String> listaParaPantalla = new LinkedList<>();
-                    
-                    // Si solo llegó el comando, significa que la lista en el servidor está vacía
                     if (partes.length == 1) {
                         listaParaPantalla.add("Esperando turnos...");
                     } else {
-                        // Leemos de a pares: DNI_CIFRADO y PUESTO
                         for (int i = 1; i < partes.length; i += 2) {
                             String dniCifrado = partes[i];
                             String nroPuesto = partes[i+1];
@@ -100,7 +94,6 @@ public class MonitorModelo {
                         }
                     }
                     
-                    // Mandamos la lista a la ventana para que la dibuje
                     if (listener != null) {
                         listener.alRecibirNuevoLlamado(listaParaPantalla);
                     }
