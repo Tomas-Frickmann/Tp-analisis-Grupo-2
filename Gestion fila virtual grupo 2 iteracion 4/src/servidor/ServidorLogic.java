@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.io.File;
 
 import factory.IFabricaEntidades;
 import persistencia.ClienteDTO;
@@ -61,6 +62,7 @@ public class ServidorLogic {
     }
 
     public void iniciarServidor() {
+    	limpiarArchivosPersistenciaObsoletos();
         abrirPuertoParaAtencion();
         if (esRespaldo) {
             descargarEstadoInicial();
@@ -379,7 +381,6 @@ public class ServidorLogic {
         }
     }
     private void actualizarPantallas(String dni, String numPuesto) {
-        //String dniCifrado = SeguridadFacade.cifrarDni(dni);
         String infoLlamado = dni + Protocolo.SEPARADOR + "Puesto " + numPuesto;
         ultimosLlamados.removeIf(llamado -> llamado.startsWith(dni));
         ultimosLlamados.addFirst(infoLlamado);
@@ -546,5 +547,23 @@ public class ServidorLogic {
                 } catch (Exception e) { break; }
             }
         }).start();
+    }
+    private void limpiarArchivosPersistenciaObsoletos() {
+        String formatoActual = config.getFormatoPersistencia().toLowerCase();
+        String base = obtenerNombreArchivoPersistencia();
+        File dir = new File("."); 
+        File[] archivos = dir.listFiles((d, name) -> name.startsWith(base));
+
+        if (archivos != null) {
+            for (File f : archivos) {
+                String nombre = f.getName().toLowerCase();
+                if (!nombre.endsWith("." + formatoActual)) {
+                    if (nombre.endsWith(".json") || nombre.endsWith(".xml") || nombre.endsWith(".txt")) {
+                        f.delete();
+                        System.out.println("[Persistencia] Archivo obsoleto eliminado: " + f.getName());
+                    }
+                }
+            }
+        }
     }
 }

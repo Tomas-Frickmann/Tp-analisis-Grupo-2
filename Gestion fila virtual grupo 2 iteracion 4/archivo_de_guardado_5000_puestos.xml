@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<puestos>
+  <puesto>
+    <ip>26.38.110.213</ip>
+    <puerto>6001</puerto>
+    <dni>null</dni>
+    <reintentos>0</reintentos>
+    <nroPuesto>1</nroPuesto>
+    <activo>false</activo>
+    <ultimoContacto>1780778255808</ultimoContacto>
+  </puesto>
+</puestos>
