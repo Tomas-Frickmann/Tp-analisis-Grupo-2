@@ -420,17 +420,14 @@ public class ServidorLogic {
                 try {
                     Thread.sleep(config.getintervaloPing());
                     
-                    
                     String[] principal = GestorJson.obtenerPrincipalActivo();
                     
                     if (principal != null) {
                         try (Socket s = new Socket(principal[0], Integer.parseInt(principal[1]))) {
-                            
+                            // Ping exitoso, el líder sigue vivo
                         } catch (Exception e) {
-                            
                             System.out.println("! >>> Principal caído detectado en: " + principal[1]);
                             GestorJson.marcarInactivo(principal[0], Integer.parseInt(principal[1]));
-                            
                             
                             String[] nuevoHeredero = GestorJson.obtenerHeredero();
                             if (nuevoHeredero != null && puertoServidor == Integer.parseInt(nuevoHeredero[1])) {
@@ -438,6 +435,10 @@ public class ServidorLogic {
                                 ServidorMain.setEsRespaldo(false);
                                 GestorJson.registrarOActualizar(ip, puertoServidor, true, true);
                                 actualizarIdentidad();
+                                
+                                System.out.println("[Recuperación] El principal cayó. Cargando estado desde disco...");
+                                cargarEstadoDesdeDisco(); 
+                                
                                 guardarEstadoEnDisco();
                                 iniciarLimpiezaDePuestos();
                                 System.out.println("! >>> ME HE CONVERTIDO EN EL NUEVO PRINCIPAL <<<");
@@ -448,13 +449,17 @@ public class ServidorLogic {
                             }
                         }
                     } else {
-                        
                         String[] nuevoHeredero = GestorJson.obtenerHeredero();
                         if (nuevoHeredero != null && puertoServidor == Integer.parseInt(nuevoHeredero[1])) {
                             esRespaldo = false;
                             ServidorMain.setEsRespaldo(false);
                             GestorJson.registrarOActualizar(ip, puertoServidor, true, true);
                             actualizarIdentidad();
+                            
+                            System.out.println("[Recuperación] No hay principal en JSON. Cargando estado desde disco...");
+                            cargarEstadoDesdeDisco();
+                            
+                            guardarEstadoEnDisco(); 
                             iniciarLimpiezaDePuestos();
                             break;
                         }

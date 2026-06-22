@@ -19,25 +19,35 @@ public class ServidorMain {
         ConfigServidor config = new ConfigServidor("config_servidores.properties");
         File lockFile = new File("eleccion_lider.lock");
 
-      
         try (RandomAccessFile raf = new RandomAccessFile(lockFile, "rw");
              FileChannel channel = raf.getChannel();
              FileLock lock = channel.lock()) { 
 
             System.out.println("[SISTEMA] Iniciando secuencia de arranque...");
 
-            
             try (ServerSocket test = new ServerSocket(config.getPuertoPrincipal())) {
                 miPuerto = config.getPuertoPrincipal();
                 miIp = config.getIpPrincipal();
             } catch (IOException e) {
-                
                 miPuerto = buscarPuertoLibre(config.getPuertoRespaldo());
                 miIp = config.getIpRespaldo();
             }
 
-            
             String[] principalActual = GestorJson.obtenerPrincipalActivo();
+
+            if (principalActual != null) {
+                if (Integer.parseInt(principalActual[1]) == miPuerto) {
+                    principalActual = null; 
+                } else {
+                    try (java.net.Socket socketPing = new java.net.Socket(principalActual[0], Integer.parseInt(principalActual[1]))) {
+                        System.out.println("[SISTEMA] Conexión confirmada con el Principal verídico.");
+                    } catch (IOException e) {
+                        System.out.println("[SISTEMA] Registro fantasma detectado en JSON (" + principalActual[0] + ":" + principalActual[1] + "). Limpiando...");
+                        GestorJson.marcarInactivo(principalActual[0], Integer.parseInt(principalActual[1]));
+                        principalActual = null; 
+                    }
+                }
+            }
 
             if (principalActual == null) {
                 esRespaldo = false;
@@ -48,7 +58,6 @@ public class ServidorMain {
                 System.out.println("[SISTEMA] >>> Vigila a: " + principalActual[0] + ":" + principalActual[1]);
             }
 
-            
             GestorJson.registrarOActualizar(miIp, miPuerto, !esRespaldo, true);
 
         } catch (Exception e) {
@@ -56,12 +65,10 @@ public class ServidorMain {
             return;
         }
 
-        
         Thread heartbeatThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(10000);
-                    
                     GestorJson.registrarOActualizar(miIp, miPuerto, !isEsRespaldo(), true);
                 } catch (InterruptedException e) { 
                     break; 
@@ -80,11 +87,8 @@ public class ServidorMain {
            }
         }));
 
-        
-        
         logica.iniciarServidor();
     }
-
     private static int buscarPuertoLibre(int puertoBase) {
         int p = puertoBase;
         while (p < puertoBase + 50) {
